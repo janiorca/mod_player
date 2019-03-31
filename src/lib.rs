@@ -502,7 +502,7 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
                 player_state.channels[channel_num].volume = 0.0;
             }
         }
-        Effect::SetHardwareFilter{ new_state } => {
+        Effect::SetHardwareFilter{ new_state : _ } => {
             // not much to do. only works on the a500            
         }
         Effect::None => {}
@@ -543,7 +543,7 @@ fn play_line(song: &Song, player_state: &mut PlayerState ) {
     }
 }
 
-fn update_effects(song: &Song, player_state: &mut PlayerState ){
+fn update_effects( player_state: &mut PlayerState ){
     for channel in &mut player_state.channels {
         if channel.sample_num != 0 {
             if channel.retrigger_delay > 0 {
@@ -609,7 +609,7 @@ pub fn next_sample(song: &Song, player_state: &mut PlayerState) -> (f32, f32) {
     if player_state.current_vblank_sample >= player_state.samples_per_vblank {
         player_state.current_vblank_sample = 0;
 
-        update_effects(song,player_state);
+        update_effects(player_state);
 
         // Is it time to play a new note line either by VBI counting or BPM counting
         if player_state.current_vblank >= player_state.song_speed {
