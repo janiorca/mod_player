@@ -6,7 +6,7 @@ use std::sync::mpsc;
 use std::sync;
 
 enum PlayerCommand{
-    PlayInstrument{ index : u8 }
+    Stop{ }
 }
 
 fn setup_stream( song : sync::Arc<mod_player::Song> ) -> mpsc::Sender<PlayerCommand> {
@@ -25,24 +25,12 @@ fn setup_stream( song : sync::Arc<mod_player::Song> ) -> mpsc::Sender<PlayerComm
     let stream_id = event_loop.build_output_stream(&device, &format).unwrap();
     event_loop.play_stream(stream_id.clone());
 
-    let mut instrument_number = 0;
-    let mut instrument_pos = 0;
     let mut player_state : mod_player::PlayerState = mod_player::PlayerState::new( song.format.num_channels, format.sample_rate.0);
     let mut last_line_pos = 9999;
 
     let (tx,rx) = mpsc::channel();
     thread::spawn( move || {
         event_loop.run(move |_, data| {
-            let message = rx.try_recv();
-            if message.is_ok() {
-                match message.unwrap() {
-                    PlayerCommand::PlayInstrument{ index } => { 
-                        instrument_number = index;
-                        instrument_pos = 0;
-                        println!( "Playing instrument {}", index );   //Set up instrument playing here
-                    }
-                };
-            }
             if player_state.current_line != last_line_pos {
                 if player_state.current_line == 0 {
                     println!("");
@@ -66,16 +54,13 @@ fn setup_stream( song : sync::Arc<mod_player::Song> ) -> mpsc::Sender<PlayerComm
 }
 
 fn main() {
+//    let song = sync::Arc::new( mod_player::read_mod_file("CHIP_SLAYER!.MOD") );     // pattern space issue
     let song = sync::Arc::new( mod_player::read_mod_file("CHIP_SLAYER!.MOD") );     // pattern space issue
     mod_player::textout::print_song_info(  &song );
     let tx = setup_stream(song.clone());
     loop{
         let mut command = String::new();
         std::io::stdin().read_line(& mut command);
-        command = command.trim_end().to_string();
-        let res  = command.parse::<u8>();
-        if res.is_ok() {
-            tx.send(PlayerCommand::PlayInstrument{ index : res.unwrap() } );
-        }
+        return;
     }
 }

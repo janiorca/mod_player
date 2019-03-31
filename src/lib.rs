@@ -176,6 +176,7 @@ impl Effect{
                 match extended_effect {
                     0 => Effect::SetHardwareFilter{ new_state : extended_argument as u8 },
                     1 => Effect::FinePortaUp{ period_change : extended_argument as u8 },
+                    2 => Effect::FinePortaDown{ period_change : extended_argument as u8 },
                     6 => {
                         match extended_argument {
                             0 => Effect::PatternLoop{ arg: 0},
@@ -484,6 +485,10 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
         }
         Effect::FinePortaUp{ period_change } => {
             player_state.channels[channel_num].period = change_note(player_state.channels[channel_num].period, -( period_change as i32 ) );
+
+        }
+        Effect::FinePortaDown{ period_change } => {
+            player_state.channels[channel_num].period = change_note(player_state.channels[channel_num].period, period_change as i32 );
 
         }
         Effect::RetriggerSample{ retrigger_delay } => {
