@@ -1,7 +1,6 @@
 extern crate cpal;
 use hound;
 
-use std::fs;
 use std::thread;
 use std::sync::mpsc;
 use std::sync;

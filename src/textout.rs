@@ -15,25 +15,25 @@ static NOTE_FREQUENCY_STRINGS : [ (u32, &str ); 60 ]= [
 impl Effect{
     fn to_string( &self ) -> String {
         return match self {
-            Effect::Arpeggio{ chord_offset_1, chord_offset_2 } => { String::from( "Arpgi" ) },
-            Effect::SlideUp{ speed } => { String::from( "SldUp" ) },
-            Effect::SlideDown{ speed } => { String::from( "SldDn" ) },
-            Effect::TonePortamento{ speed } => { String::from( "TonPo" ) }, 
-            Effect::Vibrato{ speed, amplitude } => { String::from( "Vibra" ) },
-            Effect::TonePortamentoVolumeSlide{ volume_change } => { String::from( "TPVos") }
-            Effect::VibratoVolumeSlide{ volume_change } => { String::from( "ViVoS" ) },
-            Effect::SetSampleOffset{ offset } => { String::from( "Offst" ) },
-            Effect::VolumeSlide{ volume_change } => { String::from( "VolSl" ) },
-            Effect::PositionJump{ next_pattern } => { String::from( "Jump." ) },
-            Effect::SetVolume{ volume } => { String::from( "Volme" ) },
-            Effect::PatternBreak{ next_pattern_pos } => { String::from( "Break" ) },
-            Effect::SetSpeed{ speed } => { String::from( "Speed" ) },
-            Effect::SetHardwareFilter{  new_state } => { String::from( "StHwF")}
-            Effect::FinePortaUp{ period_change : u8 } => { String::from( "FPoUp")},
-            Effect::FinePortaDown{ period_change : u8 } => { String::from( "FPoDn")},
-            Effect::FineVolumeSlideUp{ volume_change } => { String::from( "FVSUp")}
-            Effect::FineVolumeSlideDown{ volume_change } => { String::from( "FVSDn")}
-            Effect::SetVibratoWave{ wave } => { String::from( "VibWv" ) }
+            Effect::Arpeggio{ chord_offset_1 : _ , chord_offset_2 : _ } => { String::from( "Arpgi" ) },
+            Effect::SlideUp{ speed : _ } => { String::from( "SldUp" ) },
+            Effect::SlideDown{ speed : _ } => { String::from( "SldDn" ) },
+            Effect::TonePortamento{ speed : _ } => { String::from( "TonPo" ) }, 
+            Effect::Vibrato{ speed : _, amplitude : _ } => { String::from( "Vibra" ) },
+            Effect::TonePortamentoVolumeSlide{ volume_change : _ } => { String::from( "TPVos") }
+            Effect::VibratoVolumeSlide{ volume_change : _ } => { String::from( "ViVoS" ) },
+            Effect::SetSampleOffset{ offset : _ } => { String::from( "Offst" ) },
+            Effect::VolumeSlide{ volume_change : _ } => { String::from( "VolSl" ) },
+            Effect::PositionJump{ next_pattern : _ } => { String::from( "Jump." ) },
+            Effect::SetVolume{ volume : _ } => { String::from( "Volme" ) },
+            Effect::PatternBreak{ next_pattern_pos : _ } => { String::from( "Break" ) },
+            Effect::SetSpeed{ speed : _ } => { String::from( "Speed" ) },
+            Effect::SetHardwareFilter{  new_state : _ } => { String::from( "StHwF")}
+            Effect::FinePortaUp{ period_change : _ } => { String::from( "FPoUp")},
+            Effect::FinePortaDown{ period_change : _ } => { String::from( "FPoDn")},
+            Effect::FineVolumeSlideUp{ volume_change : _ } => { String::from( "FVSUp")}
+            Effect::FineVolumeSlideDown{ volume_change : _ } => { String::from( "FVSDn")}
+            Effect::SetVibratoWave{ wave : _ } => { String::from( "VibWv" ) }
             _ =>  { String::from( "....." ) }
         }
     }
