@@ -1,4 +1,6 @@
-/// Utility functions for printing out informationa about mods.
+//! # for printing information about the mod song 
+//! 
+//! text_out contains utility functions for printing out information about mods. Primarily intended to be used for debugging and understanding the progress of the playback
 use super::{Note,Song,Effect};
 use super::Sample;
 

@@ -67,18 +67,7 @@ fn setup_stream( song : sync::Arc<mod_player::Song> ) -> mpsc::Sender<PlayerComm
 }
 
 fn main() {
-    let song = sync::Arc::new( mod_player::read_mod_file("BOG_WRAITH.MOD") );     // pattern space issue
-//    let song = sync::Arc::new( mod_player::read_mod_file("CHIP_SLAYER!.MOD") );     // pattern space issue
-//    let song = sync::Arc::new( mod_player::read_mod_file("ballade_pour_adeline.MOD") );     // pattern space issue
-//    let song = sync::Arc::new( mod_player::read_mod_file("stardstm.MOD") );
-//    let song = sync::Arc::new( mod_player::read_mod_file("BUBBLE_BOBBLE.MOD") );  
-
-//    let song = sync::Arc::new( mod_player::read_mod_file("echoing.MOD") );     // pattern space issue
-//    let song = sync::Arc::new( mod_player::read_mod_file("spacedebris.mod") );     // pattern space issue
-//    let song = sync::Arc::new( mod_player::read_mod_file("switchback.mod") );     // pattern space issue
-//    let song = sync::Arc::new( mod_player::read_mod_file("cream_of_the_earth.mod") );     // pattern space issue
-
-
+    let song = sync::Arc::new( mod_player::read_mod_file("CHIP_SLAYER!.MOD") );     // pattern space issue
     mod_player::textout::print_song_info(  &song );
     let tx = setup_stream(song.clone());
     loop{

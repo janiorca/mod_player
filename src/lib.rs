@@ -1,3 +1,41 @@
+//! # mod_player
+//! 
+//! mod_player is a crate that reads and plays back mod audio files. The mod_player decodes the audio one sample pair (left,right) at a time
+//! that can be streamed to an audio device or a file. 
+//! 
+//! For playback, only two functions are needed; 
+//! * read_mod_file to read the file into a Song structure
+//! * next_sample to get the next sample
+//! 
+//! To use the library to decode a mod file and save it to disk ( using the hound audio crate for WAV saving ) 
+//! 
+//! ```rust
+//! use hound;
+//!  
+//! fn main() {
+//!     let spec = hound::WavSpec { 
+//!     channels: 2,
+//!         sample_rate: 48100,
+//!         bits_per_sample: 32,
+//!         sample_format: hound::SampleFormat::Float,
+//!     };
+//!
+//!     let mut writer = hound::WavWriter::create( "out.wav", spec).unwrap();
+//!     let song = mod_player::read_mod_file("BUBBLE_BOBBLE.MOD");
+//!     let mut player_state : mod_player::PlayerState = mod_player::PlayerState::new( 
+//!                                 song.format.num_channels, spec.sample_rate );
+//!     loop {
+//!         let ( left, right ) = mod_player::next_sample(&song, &mut player_state);
+//!         writer.write_sample( left  );
+//!         writer.write_sample( right  );
+//!         if player_state.song_has_ended || player_state.has_looped { 
+//!             break;
+//!         }
+//!     }
+//!  }
+//! ```
+ 
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -85,11 +123,13 @@ enum Effect{
     SetSpeed{ speed : u8 },             // 15
 
     SetHardwareFilter{ new_state: u8 },         //E0
-    FinePortaUp{ period_change : u8 },          //E1 ( 14 01 )
-    FinePortaDown{ period_change : u8 },        //E2 ( 14 01 )
-    PatternLoop{ arg: u8 },                     //E6 ( )
-    FineVolumeSlideUp{ volume_change : u8 },        //EA ( 14 01 )
-    FineVolumeSlideDown{ volume_change : u8 },        //EB ( 14 01 )
+    FinePortaUp{ period_change : u8 },          //E1 
+    FinePortaDown{ period_change : u8 },        //E2 
+    PatternLoop{ arg: u8 },                     //E6 
+    RetriggerSample{ retrigger_delay : u8 },    //E9 
+    FineVolumeSlideUp{ volume_change : u8 },        //EA 
+    FineVolumeSlideDown{ volume_change : u8 },        //EB 
+    DelayedSample{ delay_ticks : u8 },        //ED 
     SetVibratoWave{ wave : u8 }
 }
 
@@ -142,8 +182,10 @@ impl Effect{
                             _ => panic!( "unhandled PATTERN LOOp Trigger" )
                         }    
                     }
+                    9 => Effect::RetriggerSample{ retrigger_delay : extended_argument as u8 },
                     10 => Effect::FineVolumeSlideUp{ volume_change : extended_argument as u8 },
                     11 => Effect::FineVolumeSlideDown{ volume_change : extended_argument as u8 },
+                    13 => Effect::DelayedSample{ delay_ticks : extended_argument as u8 },
                     _ => panic!( format!( "unhandled extended effect number: {}", extended_effect ) )
                 }
             },
@@ -157,9 +199,10 @@ impl Effect{
     }
 }
 
+/// Describes what sound sample to play and an effect (if any) that should be applied. 
 pub struct Note{
     sample_number: u8,
-    period: u32,            // how many clock ticks each sample is held for
+    period: u32,            /// how many clock ticks each sample is held for
     effect: Effect,
 }
 
@@ -172,8 +215,13 @@ fn change_note( current_period : u32, change : i32 ) -> u32 {
 }
 
 impl Note{
-    fn new( note_data : &[u8]) -> Note {
-        let sample_number = ( (note_data[2] & 0xf0) >> 4 )  + ( note_data[ 0 ] &0xf0);
+    fn new( note_data : &[u8], format_description : &FormatDescription) -> Note {
+        let mut sample_number = ( (note_data[2] & 0xf0) >> 4 )  + ( note_data[ 0 ] &0xf0);
+        if format_description.num_samples == 15 {
+            sample_number = sample_number & 0x0f;
+        } else {
+            sample_number = sample_number & 0x1f;
+        }
         let period = ((note_data[0] & 0x0f) as u32) * 256 + (note_data[1] as u32);
         let effect_argument = note_data[3] as i8;
         let effect_number = note_data[ 2] & 0x0f;
@@ -240,6 +288,9 @@ struct ChannelInfo {
     vibrato_speed : u32,
     vibrato_depth : i32,
     
+    retrigger_delay : u32,
+    retrigger_counter : u32,
+
     arpeggio_counter : u32,
     arpeggio_offsets : [u32;2],
 }
@@ -261,6 +312,8 @@ impl ChannelInfo{
             vibrato_speed : 0,
             vibrato_depth : 0,
 
+            retrigger_delay : 0,
+            retrigger_counter : 0,
             arpeggio_counter : 0,
             arpeggio_offsets : [ 0, 0] ,
         }
@@ -339,6 +392,7 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
 
     player_state.channels[channel_num].volume_change = 0.0;
     player_state.channels[channel_num].note_change = 0;
+    player_state.channels[channel_num].retrigger_delay = 0;
 
     player_state.channels[channel_num].vibrato_pos = 0;
     player_state.channels[channel_num].vibrato_speed = 0;
@@ -402,6 +456,7 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
             player_state.channels[channel_num].volume_change = volume_change as f32;
             player_state.channels[channel_num].period_target = old_period_target;
             player_state.channels[channel_num].period = old_period;
+            player_state.channels[channel_num].note_change = old_note_change;
         }
         Effect::VibratoVolumeSlide{ volume_change } => {
             player_state.channels[channel_num].volume_change = volume_change as f32;
@@ -431,6 +486,10 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
             player_state.channels[channel_num].period = change_note(player_state.channels[channel_num].period, -( period_change as i32 ) );
 
         }
+        Effect::RetriggerSample{ retrigger_delay } => {
+            player_state.channels[ channel_num ].retrigger_delay = retrigger_delay as u32; 
+            player_state.channels[ channel_num ].retrigger_counter = 0; 
+        }
         Effect::FineVolumeSlideUp{ volume_change } => {
             player_state.channels[channel_num].volume = player_state.channels[channel_num].volume + volume_change as f32;
             if player_state.channels[channel_num].volume > 64.0 {
@@ -456,6 +515,7 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
 
 fn play_line(song: &Song, player_state: &mut PlayerState ) {
     // is a pattern break active
+
     if player_state.next_pattern_pos != -1 {
         player_state.song_pattern_position += 1;
         player_state.current_line = player_state.next_pattern_pos as u32;
@@ -465,6 +525,8 @@ fn play_line(song: &Song, player_state: &mut PlayerState ) {
         player_state.current_line = 0;
         player_state.next_position = -1;
     }
+
+//    player_state.song_pattern_position = 2;
 
     let line = player_state.get_song_line( song );
     for channel_number in 0..line.len(){
@@ -484,6 +546,13 @@ fn play_line(song: &Song, player_state: &mut PlayerState ) {
 fn update_effects(song: &Song, player_state: &mut PlayerState ){
     for channel in &mut player_state.channels {
         if channel.sample_num != 0 {
+            if channel.retrigger_delay > 0 {
+                channel.retrigger_counter +=1;
+                if channel.retrigger_delay == channel.retrigger_counter {
+                    channel.sample_pos = 0.0;
+                    channel.retrigger_counter = 0;
+                }
+            }            
             channel.volume += channel.volume_change;
             if channel.volume < 0.0 { channel.volume = 0.0 }
             if channel.volume > 64.0 { channel.volume = 64.0 }
@@ -554,7 +623,7 @@ pub fn next_sample(song: &Song, player_state: &mut PlayerState) -> (f32, f32) {
 
 
     for channel_number in 0..player_state.channels.len() {
-//        if channel_number != 0 { continue };
+//        if channel_number != 1 { continue };
         let channel_info: &mut ChannelInfo = &mut player_state.channels[channel_number];
         if channel_info.size > 2 {
             let current_sample: &Sample = &song.samples[(channel_info.sample_num - 1) as usize];
@@ -657,7 +726,7 @@ pub fn read_mod_file(file_name: &str) -> Song {
         let mut pattern = Pattern::new();
         for line in 0..64 {
             for _channel in 0..format.num_channels {
-                let note = Note::new( &file_data[ offset..(offset+4)]);
+                let note = Note::new( &file_data[ offset..(offset+4)], &format);
                 pattern.lines[ line ].push( note );
                 offset += 4;
             }
