@@ -36,6 +36,7 @@ fn reg_test() {
         "sarcophaser.MOD",
         "BOG_WRAITH.mod",
         "wasteland.mod",
+        //        "1 step further.MOD"  sounds wrong, all samples have fine tunes which would affect timing and sound
     ];
     let mut song_checksums: HashMap<String, u64> = HashMap::new();
     let expected_results = get_expected_results().ok();

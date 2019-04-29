@@ -82,9 +82,9 @@ impl Sample {
         let sample_name = String::from_utf8_lossy(&sample_info[0..22]);
         let sample_size: u32 = ((sample_info[23] as u32) + (sample_info[22] as u32) * 256) * 2;
         let fine_tune = sample_info[24];
-        if fine_tune != 0 {
-            println!("has fine tune {}", fine_tune);
-        }
+        // if fine_tune != 0 {
+        //     println!("has fine tune {}", fine_tune);
+        // }
         let volume = sample_info[25];
 
         // the repeat offset appears to be in bytes ...
@@ -643,7 +643,7 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
         }
         Effect::None => {}
         _ => {
-            println!("Unhandled effect");
+            //            println!("Unhandled effect");
         }
     }
 }
