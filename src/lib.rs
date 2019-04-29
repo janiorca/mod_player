@@ -21,7 +21,7 @@
 //!     };
 //!
 //!     let mut writer = hound::WavWriter::create( "out.wav", spec).unwrap();
-//!     let song = mod_player::read_mod_file("BUBBLE_BOBBLE.MOD");
+//!     let song = mod_player::read_mod_file("mod_files/BUBBLE_BOBBLE.MOD");
 //!     let mut player_state : mod_player::PlayerState = mod_player::PlayerState::new(
 //!                                 song.format.num_channels, spec.sample_rate );
 //!     loop {
@@ -55,12 +55,15 @@ static VIBRATO_TABLE: [i32; 64] = [
     -161, -180, -197, -212, -224, -235, -244, -250, -253, -255, -253, -250, -244, -235, -224, -212,
     -197, -180, -161, -141, -120, -97, -74, -49, -24,
 ];
+
+#[rustfmt::skip]
 static FREQUENCY_TABLE: [u32; 60] = [
-    // B    A#   A    G#    G   F#   F    E    D#   D   C#   C
-    57, 60, 64, 67, 71, 76, 80, 85, 90, 95, 101, 107, 113, 120, 127, 135, 143, 151, 160, 170, 180,
-    190, 202, 214, 226, 240, 254, 269, 285, 302, 320, 339, 360, 381, 404, 428, 453, 480, 508, 538,
-    570, 604, 640, 678, 720, 762, 808, 856, 907, 961, 1017, 1077, 1141, 1209, 1281, 1357, 1440,
-    1525, 1616, 1712,
+    // B    A#      A       G#      G       F#      F       E       D#      D       C#      C
+    57,     60,     64,     67,     71,     76,     80,     85,     90,     95,     101,    107, 
+    113,    120,    127,    135,    143,    151,    160,    170,    180,    190,    202,    214, 
+    226,    240,    254,    269,    285,    302,    320,    339,    360,    381,    404,    428, 
+    453,    480,    508,    538,    570,    604,    640,    678,    720,    762,    808,    856, 
+    907,    961,    1017,   1077,   1141,   1209,   1281,   1357,   1440,   1525,   1616,   1712,
 ];
 
 /// Holds the info and sample data for a sample
@@ -79,6 +82,9 @@ impl Sample {
         let sample_name = String::from_utf8_lossy(&sample_info[0..22]);
         let sample_size: u32 = ((sample_info[23] as u32) + (sample_info[22] as u32) * 256) * 2;
         let fine_tune = sample_info[24];
+        if fine_tune != 0 {
+            println!("has fine tune {}", fine_tune);
+        }
         let volume = sample_info[25];
 
         // the repeat offset appears to be in bytes ...
@@ -508,6 +514,7 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
     player_state.channels[channel_num].vibrato_speed = 0;
     player_state.channels[channel_num].vibrato_depth = 0;
 
+    player_state.channels[channel_num].arpeggio_counter = 0;
     player_state.channels[channel_num].arpeggio_offsets[0] = 0;
     player_state.channels[channel_num].arpeggio_offsets[1] = 0;
     if note.period != 0 {
@@ -702,21 +709,19 @@ fn update_effects(player_state: &mut PlayerState) {
             }
 
             if channel.arpeggio_offsets[0] != 0 || channel.arpeggio_offsets[1] != 0 {
-                let index: u32 = FREQUENCY_TABLE
+                let index: i32 = FREQUENCY_TABLE
                     .binary_search(&channel.base_period)
-                    .expect("Unexpected period value") as u32;
+                    .expect("Unexpected period value") as i32;
                 if channel.arpeggio_counter > 0 {
-                    let mut note_offset = (index
-                        + channel.arpeggio_offsets[(channel.arpeggio_counter - 1) as usize])
-                        as usize;
-                    if note_offset >= FREQUENCY_TABLE.len() {
-                        note_offset = FREQUENCY_TABLE.len() - 1;
+                    let mut note_offset = index
+                        - channel.arpeggio_offsets[(channel.arpeggio_counter - 1) as usize] as i32;
+                    if note_offset < 0 {
+                        note_offset = 0;
                     }
-                    channel.period = FREQUENCY_TABLE[note_offset];
+                    channel.period = FREQUENCY_TABLE[note_offset as usize];
                 } else {
                     channel.period = channel.base_period;
                 }
-
                 channel.arpeggio_counter += 1;
                 if channel.arpeggio_counter >= 3 {
                     channel.arpeggio_counter = 0;

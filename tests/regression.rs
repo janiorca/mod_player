@@ -33,7 +33,7 @@ fn reg_test() {
         "switchback.mod",
         "stardstm.MOD",
         "overload.mod",
-        "sarcophaser.MOD", // arpeggio still sounds off
+        "sarcophaser.MOD",
         "BOG_WRAITH.mod",
         "wasteland.mod",
     ];
