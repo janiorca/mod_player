@@ -10,6 +10,7 @@ fn main() {
 
     let mut writer = hound::WavWriter::create("out.wav", spec).unwrap();
     let song = mod_player::read_mod_file("mod_files/CHIP_SLAYER!.MOD");
+    mod_player::textout::print_song_info(&song);
     let mut player_state: mod_player::PlayerState =
         mod_player::PlayerState::new(song.format.num_channels, spec.sample_rate);
     loop {

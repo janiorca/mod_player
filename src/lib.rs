@@ -66,6 +66,102 @@ static FREQUENCY_TABLE: [u32; 60] = [
     907,    961,    1017,   1077,   1141,   1209,   1281,   1357,   1440,   1525,   1616,   1712,
 ];
 
+#[rustfmt::skip]
+static FINE_TUNE_TABLE : [ [ u32; 60 ]; 16 ] = [
+[   56, 60, 63, 67, 71, 75, 80, 85, 90, 95, 101, 107,
+    113, 120, 127, 135, 143, 151, 160, 170, 180, 190, 202, 214,
+    226, 240, 254, 269, 285, 302, 320, 339, 360, 381, 404, 428,
+    453, 480, 508, 538, 570, 604, 640, 678, 720, 762, 808, 856,
+    906, 960, 1016, 1076, 1140, 1208, 1280, 1356, 1440, 1524, 1616, 1712 ],
+[   56, 59, 63, 67, 71, 75, 79, 84, 89, 94, 100, 106,
+    113, 119, 126, 134, 142, 150, 159, 169, 179, 189, 201, 213,
+    225, 239, 253, 268, 284, 300, 318, 337, 357, 379, 401, 425,
+    450, 477, 505, 535, 567, 601, 637, 674, 715, 757, 802, 850,
+    900, 954, 1010, 1070, 1134, 1202, 1274, 1348, 1430, 1514, 1604, 1700 ],
+[   56, 59, 62, 66, 70, 74, 79, 83, 88, 94, 99, 105,
+    112, 118, 125, 133, 141, 149, 158, 167, 177, 188, 199, 211,
+    224, 237, 251, 266, 282, 298, 316, 335, 355, 376, 398, 422,
+    447, 474, 502, 532, 563, 597, 632, 670, 709, 752, 796, 844,
+    894, 948, 1004, 1064, 1126, 1194, 1264, 1340, 1418, 1504, 1592, 1688 ],
+[   55, 59, 62, 66, 70, 74, 78, 83, 88, 93, 99, 104,
+    111, 118, 125, 132, 140, 148, 157, 166, 176, 187, 198, 209,
+    222, 235, 249, 264, 280, 296, 314, 332, 352, 373, 395, 419,
+    444, 470, 498, 528, 559, 592, 628, 665, 704, 746, 791, 838,
+    888, 940, 996, 1056, 1118, 1184, 1256, 1330, 1408, 1492, 1582, 1676 ],
+[   55, 58, 62, 65, 69, 73, 78, 82, 87, 92, 98, 104,
+    110, 117, 124, 131, 139, 147, 156, 165, 175, 185, 196, 208,
+    220, 233, 247, 262, 278, 294, 312, 330, 350, 370, 392, 416,
+    441, 467, 495, 524, 555, 588, 623, 660, 699, 741, 785, 832,
+    882, 934, 990, 1048, 1110, 1176, 1246, 1320, 1398, 1482, 1570, 1664 ],
+[   54, 58, 61, 65, 69, 73, 77, 82, 87, 92, 97, 103,
+    109, 116, 123, 130, 138, 146, 155, 164, 174, 184, 195, 206,
+    219, 232, 245, 260, 276, 292, 309, 328, 347, 368, 390, 413,
+    437, 463, 491, 520, 551, 584, 619, 655, 694, 736, 779, 826,
+    874, 926, 982, 1040, 1102, 1168, 1238, 1310, 1388, 1472, 1558, 1652 ],
+[   54, 57, 61, 64, 68, 72, 77, 81, 86, 91, 96, 102,
+    109, 115, 122, 129, 137, 145, 154, 163, 172, 183, 193, 205,
+    217, 230, 244, 258, 274, 290, 307, 325, 345, 365, 387, 410,
+    434, 460, 487, 516, 547, 580, 614, 651, 689, 730, 774, 820,
+    868, 920, 974, 1032, 1094, 1160, 1228, 1302, 1378, 1460, 1548, 1640 ],
+[   54, 57, 60, 64, 68, 72, 76, 80, 85, 90, 96, 102,
+    108, 114, 121, 128, 136, 144, 152, 161, 171, 181, 192, 204,
+    216, 228, 242, 256, 272, 288, 305, 323, 342, 363, 384, 407,
+    431, 457, 484, 513, 543, 575, 610, 646, 684, 725, 768, 814,
+    862, 914, 968, 1026, 1086, 1150, 1220, 1292, 1368, 1450, 1536, 1628 ],
+[   60, 63, 67, 71, 75, 80, 85, 90, 95, 101, 107, 113,
+    120, 127, 135, 143, 151, 160, 170, 180, 190, 202, 214, 226,
+    240, 254, 269, 285, 302, 320, 339, 360, 381, 404, 428, 453,
+    480, 508, 538, 570, 604, 640, 678, 720, 762, 808, 856, 907,
+    960, 1016, 1076, 1140, 1208, 1280, 1356, 1440, 1524, 1616, 1712, 1814 ],
+[   59, 63, 67, 71, 75, 79, 84, 89, 94, 100, 106, 112,
+    119, 126, 134, 142, 150, 159, 169, 179, 189, 200, 212, 225,
+    238, 253, 268, 284, 300, 318, 337, 357, 379, 401, 425, 450,
+    477, 505, 535, 567, 601, 636, 675, 715, 757, 802, 850, 900,
+    954, 1010, 1070, 1134, 1202, 1272, 1350, 1430, 1514, 1604, 1700, 1800 ],
+[   59, 62, 66, 70, 74, 79, 83, 88, 94, 99, 105, 111,
+    118, 125, 133, 141, 149, 158, 167, 177, 188, 199, 211, 223,
+    237, 251, 266, 282, 298, 316, 335, 355, 376, 398, 422, 447,
+    474, 502, 532, 563, 597, 632, 670, 709, 752, 796, 844, 894,
+    948, 1004, 1064, 1126, 1194, 1264, 1340, 1418, 1504, 1592, 1688, 1788 ],
+[   59, 62, 66, 70, 74, 78, 83, 88, 93, 99, 104, 111,
+    118, 125, 132, 140, 148, 157, 166, 176, 187, 198, 209, 222,
+    235, 249, 264, 280, 296, 314, 332, 352, 373, 395, 419, 444,
+    470, 498, 528, 559, 592, 628, 665, 704, 746, 791, 838, 887,
+    940, 996, 1056, 1118, 1184, 1256, 1330, 1408, 1492, 1582, 1676, 1774 ],
+[   58, 61, 65, 69, 73, 78, 82, 87, 92, 98, 104, 110,
+    117, 123, 131, 139, 147, 156, 165, 175, 185, 196, 208, 220,
+    233, 247, 262, 278, 294, 312, 330, 350, 370, 392, 416, 441,
+    467, 494, 524, 555, 588, 623, 660, 699, 741, 785, 832, 881,
+    934, 988, 1048, 1110, 1176, 1246, 1320, 1398, 1482, 1570, 1664, 1762 ],
+[   58, 61, 65, 69, 73, 77, 82, 87, 92, 97, 103, 109,
+    116, 123, 130, 138, 146, 155, 164, 174, 184, 195, 206, 219,
+    232, 245, 260, 276, 292, 309, 328, 347, 368, 390, 413, 437,
+    463, 491, 520, 551, 584, 619, 655, 694, 736, 779, 826, 875,
+    926, 982, 1040, 1102, 1168, 1238, 1310, 1388, 1472, 1558, 1652, 1750 ],
+[   57, 61, 64, 68, 72, 77, 81, 86, 91, 96, 102, 108,
+    115, 122, 129, 137, 145, 154, 163, 172, 183, 193, 205, 217,
+    230, 244, 258, 274, 290, 307, 325, 345, 365, 387, 410, 434,
+    460, 487, 516, 547, 580, 614, 651, 689, 730, 774, 820, 868,
+    920, 974, 1032, 1094, 1160, 1228, 1302, 1378, 1460, 1548, 1640, 1736 ],
+[   57, 60, 64, 68, 72, 76, 80, 85, 90, 96, 101, 108,
+    114, 121, 128, 136, 144, 152, 161, 171, 181, 192, 203, 216,
+    228, 242, 256, 272, 288, 305, 323, 342, 363, 384, 407, 431,
+    457, 484, 513, 543, 575, 610, 646, 684, 725, 768, 814, 862,
+    914, 968, 1026, 1086, 1150, 1220, 1292, 1368, 1450, 1536, 1628, 1724,
+]];
+
+fn fine_tune_period(period: u32, fine_tune: u32) -> u32 {
+    let mut new_period = 0;
+    if period == 1688 {
+        println!("found {}", period);
+        new_period = 58;
+    }
+    let index: i32 = FREQUENCY_TABLE
+        .binary_search(&period)
+        .expect("Unexpected period value") as i32;
+
+    FINE_TUNE_TABLE[fine_tune as usize][index as usize]
+}
 /// Holds the info and sample data for a sample
 pub struct Sample {
     name: String,
@@ -82,9 +178,6 @@ impl Sample {
         let sample_name = String::from_utf8_lossy(&sample_info[0..22]);
         let sample_size: u32 = ((sample_info[23] as u32) + (sample_info[22] as u32) * 256) * 2;
         let fine_tune = sample_info[24];
-        // if fine_tune != 0 {
-        //     println!("has fine tune {}", fine_tune);
-        // }
         let volume = sample_info[25];
 
         // the repeat offset appears to be in bytes ...
@@ -335,10 +428,24 @@ impl Note {
         } else {
             sample_number = sample_number & 0x1f;
         }
-        let period = ((note_data[0] & 0x0f) as u32) * 256 + (note_data[1] as u32);
+        let mut period = ((note_data[0] & 0x0f) as u32) * 256 + (note_data[1] as u32);
         let effect_argument = note_data[3] as i8;
         let effect_number = note_data[2] & 0x0f;
         let effect = Effect::new(effect_number, effect_argument);
+
+        // TODO, So far I have found one track with non-compliant period value
+        // suppressing it and panicing on all others until I have more examples
+        // to determine better behaviour
+        if period == 1688 {
+            period = 0;
+        }
+        if sample_number > 0 && period > 0 {
+            let note_result = FREQUENCY_TABLE.binary_search(&period);
+            if note_result.is_err() {
+                panic!("unexpected note value {} found", period);
+            }
+        }
+
         Note {
             sample_number,
             period,
@@ -392,6 +499,7 @@ struct ChannelInfo {
     sample_num: u8, // which sample is playing
     sample_pos: f32,
     period: u32, //
+    fine_tune: u32,
     size: u32,
     volume: f32,        // max 1.0
     volume_change: f32, // max 1.0
@@ -417,6 +525,7 @@ impl ChannelInfo {
             sample_num: 0,
             sample_pos: 0.0,
             period: 0,
+            fine_tune: 0,
             size: 0,
             volume: 0.0,
             volume_change: 0.0,
@@ -504,6 +613,7 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
         player_state.channels[channel_num].size =
             song.samples[(note.sample_number - 1) as usize].size;
         player_state.channels[channel_num].sample_num = note.sample_number;
+        player_state.channels[channel_num].fine_tune = current_sample.fine_tune as u32;
     }
 
     player_state.channels[channel_num].volume_change = 0.0;
@@ -518,7 +628,10 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
     player_state.channels[channel_num].arpeggio_offsets[0] = 0;
     player_state.channels[channel_num].arpeggio_offsets[1] = 0;
     if note.period != 0 {
-        player_state.channels[channel_num].period = note.period as u32;
+        player_state.channels[channel_num].base_period = note.period as u32;
+        player_state.channels[channel_num].period =
+            fine_tune_period(note.period, player_state.channels[channel_num].fine_tune);
+        player_state.channels[channel_num].base_period = player_state.channels[channel_num].period;
         player_state.channels[channel_num].sample_pos = 0.0;
     }
 
@@ -541,8 +654,6 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
             chord_offset_1,
             chord_offset_2,
         } => {
-            player_state.channels[channel_num].base_period =
-                player_state.channels[channel_num].period;
             player_state.channels[channel_num].arpeggio_offsets[0] = chord_offset_1 as u32;
             player_state.channels[channel_num].arpeggio_offsets[1] = chord_offset_2 as u32;
             player_state.channels[channel_num].arpeggio_counter = 0;
@@ -569,8 +680,6 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
             }
         }
         Effect::Vibrato { speed, amplitude } => {
-            player_state.channels[channel_num].base_period =
-                player_state.channels[channel_num].period;
             player_state.channels[channel_num].vibrato_speed = speed as u32;
             player_state.channels[channel_num].vibrato_depth = amplitude as i32;
         }
@@ -689,7 +798,9 @@ fn update_effects(player_state: &mut PlayerState) {
             if channel.cut_note_delay > 0 {
                 channel.cut_note_delay -= 1;
                 if channel.cut_note_delay == 0 {
-                    channel.sample_num = 0;
+                    channel.cut_note_delay = 0;
+                    // set size of playing sample to zero to indicate nothing is playing
+                    channel.size = 0;
                 }
             }
 
@@ -718,9 +829,10 @@ fn update_effects(player_state: &mut PlayerState) {
                     if note_offset < 0 {
                         note_offset = 0;
                     }
-                    channel.period = FREQUENCY_TABLE[note_offset as usize];
+                    channel.period =
+                        fine_tune_period(FREQUENCY_TABLE[note_offset as usize], channel.fine_tune);
                 } else {
-                    channel.period = channel.base_period;
+                    channel.period = fine_tune_period(channel.base_period, channel.fine_tune);
                 }
                 channel.arpeggio_counter += 1;
                 if channel.arpeggio_counter >= 3 {
@@ -784,9 +896,6 @@ pub fn next_sample(song: &Song, player_state: &mut PlayerState) -> (f32, f32) {
             let current_sample: &Sample = &song.samples[(channel_info.sample_num - 1) as usize];
 
             // Grab the sample, no filtering
-            if channel_info.sample_pos as u32 == 4356 && current_sample.samples.len() == 3900 {
-                println!("FFFFFFF");
-            }
             let mut channel_value: f32 =
                 current_sample.samples[(channel_info.sample_pos as u32) as usize] as f32; // [ -127, 127 ]
 
