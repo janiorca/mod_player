@@ -32,11 +32,14 @@ fn reg_test() {
         "cream_of_the_earth.mod",
         "switchback.mod",
         "stardstm.MOD",
-        "overload.mod",
+        "overload.mod", // sounds off towards the end
         "sarcophaser.MOD",
         "BOG_WRAITH.mod",
         "wasteland.mod",
         "1 step further.MOD",
+        "BALLI.MOD",
+        "ballade_pour_adeline.MOD",
+        "sarcophaser.mod"
     ];
     let mut song_checksums: HashMap<String, u64> = HashMap::new();
     let expected_results = get_expected_results().ok();

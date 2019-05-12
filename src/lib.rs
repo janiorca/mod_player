@@ -68,47 +68,47 @@ static FREQUENCY_TABLE: [u32; 60] = [
 
 #[rustfmt::skip]
 static FINE_TUNE_TABLE : [ [ u32; 60 ]; 16 ] = [
-[   56, 60, 63, 67, 71, 75, 80, 85, 90, 95, 101, 107,
+[   56, 60, 63, 67, 71, 75, 80, 85, 90, 95, 101, 107,                                       // 0
     113, 120, 127, 135, 143, 151, 160, 170, 180, 190, 202, 214,
     226, 240, 254, 269, 285, 302, 320, 339, 360, 381, 404, 428,
     453, 480, 508, 538, 570, 604, 640, 678, 720, 762, 808, 856,
     906, 960, 1016, 1076, 1140, 1208, 1280, 1356, 1440, 1524, 1616, 1712 ],
-[   56, 59, 63, 67, 71, 75, 79, 84, 89, 94, 100, 106,
+[   56, 59, 63, 67, 71, 75, 79, 84, 89, 94, 100, 106,                                       // 1
     113, 119, 126, 134, 142, 150, 159, 169, 179, 189, 201, 213,
     225, 239, 253, 268, 284, 300, 318, 337, 357, 379, 401, 425,
     450, 477, 505, 535, 567, 601, 637, 674, 715, 757, 802, 850,
     900, 954, 1010, 1070, 1134, 1202, 1274, 1348, 1430, 1514, 1604, 1700 ],
-[   56, 59, 62, 66, 70, 74, 79, 83, 88, 94, 99, 105,
+[   56, 59, 62, 66, 70, 74, 79, 83, 88, 94, 99, 105,                                        // 2
     112, 118, 125, 133, 141, 149, 158, 167, 177, 188, 199, 211,
     224, 237, 251, 266, 282, 298, 316, 335, 355, 376, 398, 422,
     447, 474, 502, 532, 563, 597, 632, 670, 709, 752, 796, 844,
     894, 948, 1004, 1064, 1126, 1194, 1264, 1340, 1418, 1504, 1592, 1688 ],
-[   55, 59, 62, 66, 70, 74, 78, 83, 88, 93, 99, 104,
+[   55, 59, 62, 66, 70, 74, 78, 83, 88, 93, 99, 104,                                        // 3
     111, 118, 125, 132, 140, 148, 157, 166, 176, 187, 198, 209,
     222, 235, 249, 264, 280, 296, 314, 332, 352, 373, 395, 419,
     444, 470, 498, 528, 559, 592, 628, 665, 704, 746, 791, 838,
     888, 940, 996, 1056, 1118, 1184, 1256, 1330, 1408, 1492, 1582, 1676 ],
-[   55, 58, 62, 65, 69, 73, 78, 82, 87, 92, 98, 104,
+[   55, 58, 62, 65, 69, 73, 78, 82, 87, 92, 98, 104,                                        // 4
     110, 117, 124, 131, 139, 147, 156, 165, 175, 185, 196, 208,
     220, 233, 247, 262, 278, 294, 312, 330, 350, 370, 392, 416,
     441, 467, 495, 524, 555, 588, 623, 660, 699, 741, 785, 832,
     882, 934, 990, 1048, 1110, 1176, 1246, 1320, 1398, 1482, 1570, 1664 ],
-[   54, 58, 61, 65, 69, 73, 77, 82, 87, 92, 97, 103,
+[   54, 58, 61, 65, 69, 73, 77, 82, 87, 92, 97, 103,                                        // 5
     109, 116, 123, 130, 138, 146, 155, 164, 174, 184, 195, 206,
     219, 232, 245, 260, 276, 292, 309, 328, 347, 368, 390, 413,
     437, 463, 491, 520, 551, 584, 619, 655, 694, 736, 779, 826,
     874, 926, 982, 1040, 1102, 1168, 1238, 1310, 1388, 1472, 1558, 1652 ],
-[   54, 57, 61, 64, 68, 72, 77, 81, 86, 91, 96, 102,
+[   54, 57, 61, 64, 68, 72, 77, 81, 86, 91, 96, 102,                                        // 6
     109, 115, 122, 129, 137, 145, 154, 163, 172, 183, 193, 205,
     217, 230, 244, 258, 274, 290, 307, 325, 345, 365, 387, 410,
     434, 460, 487, 516, 547, 580, 614, 651, 689, 730, 774, 820,
     868, 920, 974, 1032, 1094, 1160, 1228, 1302, 1378, 1460, 1548, 1640 ],
-[   54, 57, 60, 64, 68, 72, 76, 80, 85, 90, 96, 102,
+[   54, 57, 60, 64, 68, 72, 76, 80, 85, 90, 96, 102,                                        // 7
     108, 114, 121, 128, 136, 144, 152, 161, 171, 181, 192, 204,
     216, 228, 242, 256, 272, 288, 305, 323, 342, 363, 384, 407,
     431, 457, 484, 513, 543, 575, 610, 646, 684, 725, 768, 814,
     862, 914, 968, 1026, 1086, 1150, 1220, 1292, 1368, 1450, 1536, 1628 ],
-[   60, 63, 67, 71, 75, 80, 85, 90, 95, 101, 107, 113,
+[   60, 63, 67, 71, 75, 80, 85, 90, 95, 101, 107, 113,                                      // -8
     120, 127, 135, 143, 151, 160, 170, 180, 190, 202, 214, 226,
     240, 254, 269, 285, 302, 320, 339, 360, 381, 404, 428, 453,
     480, 508, 538, 570, 604, 640, 678, 720, 762, 808, 856, 907,
@@ -150,18 +150,35 @@ static FINE_TUNE_TABLE : [ [ u32; 60 ]; 16 ] = [
     914, 968, 1026, 1086, 1150, 1220, 1292, 1368, 1450, 1536, 1628, 1724,
 ]];
 
-fn fine_tune_period(period: u32, fine_tune: u32) -> u32 {
-    let mut new_period = 0;
-    if period == 1688 {
-        println!("found {}", period);
-        new_period = 58;
-    }
-    let index: i32 = FREQUENCY_TABLE
-        .binary_search(&period)
-        .expect("Unexpected period value") as i32;
+static SCALE_FINE_TUNE: [f32; 16] = [
+    // from 0 to 7
+    1.0, 1.0072464, 1.0145453, 1.0218972, 1.0293022, 1.036761, 1.0442737, 1.051841,
+    // from -8 to -1
+    0.9438743, 0.950714, 0.9576033, 0.96454245, 0.9715319, 0.9785721, 0.9856632, 0.9928057,
+];
 
-    FINE_TUNE_TABLE[fine_tune as usize][index as usize]
+fn fine_tune_period(period: u32, fine_tune: u32, use_fine_tune_table: bool) -> u32 {
+    if use_fine_tune_table {
+        let index: i32 = FREQUENCY_TABLE
+            .binary_search(&period)
+            .expect("Unexpected period value") as i32;
+        return FINE_TUNE_TABLE[fine_tune as usize][index as usize];
+    } else {
+        return (period as f32 * SCALE_FINE_TUNE[fine_tune as usize]) as u32;
+    }
 }
+
+fn is_standard_note_period(period: u32) -> bool {
+    // treat 0 as  standard note because it is not a playable note
+    if period == 0 {
+        return true;
+    }
+    return match FREQUENCY_TABLE.binary_search(&period) {
+        Ok(_idx) => true,
+        Err(_idx) => false,
+    };
+}
+
 /// Holds the info and sample data for a sample
 pub struct Sample {
     name: String,
@@ -436,15 +453,10 @@ impl Note {
         // TODO, So far I have found one track with non-compliant period value
         // suppressing it and panicing on all others until I have more examples
         // to determine better behaviour
-        if period == 1688 {
-            period = 0;
-        }
-        if sample_number > 0 && period > 0 {
-            let note_result = FREQUENCY_TABLE.binary_search(&period);
-            if note_result.is_err() {
-                panic!("unexpected note value {} found", period);
-            }
-        }
+        // 286 ballade_pour_adeline
+        //        if period == 1688 {
+        //            period = 0;
+        //        }
 
         Note {
             sample_number,
@@ -493,6 +505,8 @@ pub struct Song {
     pub num_used_patterns: u32,
     /// Which pattern should be played after the last pattern in the pattern_table. Used for infinitely looping repeating songs
     pub end_position: u32,
+    /// Set to true if all the notes are standard notes (i.e. conforming to the standard period table)
+    pub has_standard_notes: bool,
 }
 
 struct ChannelInfo {
@@ -610,8 +624,7 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
         let current_sample: &Sample = &song.samples[(note.sample_number - 1) as usize];
         player_state.channels[channel_num].volume = current_sample.volume as f32; // Get volume from sample
                                                                                   //        player_state.channels[channel_num].size =  current_sample.repeat_size + current_sample.repeat_offset;
-        player_state.channels[channel_num].size =
-            song.samples[(note.sample_number - 1) as usize].size;
+        player_state.channels[channel_num].size = current_sample.size;
         player_state.channels[channel_num].sample_num = note.sample_number;
         player_state.channels[channel_num].fine_tune = current_sample.fine_tune as u32;
     }
@@ -629,8 +642,11 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
     player_state.channels[channel_num].arpeggio_offsets[1] = 0;
     if note.period != 0 {
         player_state.channels[channel_num].base_period = note.period as u32;
-        player_state.channels[channel_num].period =
-            fine_tune_period(note.period, player_state.channels[channel_num].fine_tune);
+        player_state.channels[channel_num].period = fine_tune_period(
+            note.period,
+            player_state.channels[channel_num].fine_tune,
+            song.has_standard_notes,
+        );
         player_state.channels[channel_num].base_period = player_state.channels[channel_num].period;
         player_state.channels[channel_num].sample_pos = 0.0;
     }
@@ -759,7 +775,6 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
 
 fn play_line(song: &Song, player_state: &mut PlayerState) {
     // is a pattern break active
-
     if player_state.next_pattern_pos != -1 {
         player_state.song_pattern_position += 1;
         player_state.current_line = player_state.next_pattern_pos as u32;
@@ -769,8 +784,6 @@ fn play_line(song: &Song, player_state: &mut PlayerState) {
         player_state.current_line = 0;
         player_state.next_position = -1;
     }
-
-    //    player_state.song_pattern_position = 2;
 
     let line = player_state.get_song_line(song);
     for channel_number in 0..line.len() {
@@ -784,15 +797,15 @@ fn play_line(song: &Song, player_state: &mut PlayerState) {
 
     player_state.current_line += 1;
     if player_state.current_line >= 64 {
-        if player_state.song_pattern_position == song.num_used_patterns {
+        player_state.song_pattern_position += 1;
+        if player_state.song_pattern_position >= song.num_used_patterns {
             player_state.song_has_ended = true;
         }
-        player_state.song_pattern_position += 1;
         player_state.current_line = 0;
     }
 }
 
-fn update_effects(player_state: &mut PlayerState) {
+fn update_effects(player_state: &mut PlayerState, song: &Song) {
     for channel in &mut player_state.channels {
         if channel.sample_num != 0 {
             if channel.cut_note_delay > 0 {
@@ -829,10 +842,17 @@ fn update_effects(player_state: &mut PlayerState) {
                     if note_offset < 0 {
                         note_offset = 0;
                     }
-                    channel.period =
-                        fine_tune_period(FREQUENCY_TABLE[note_offset as usize], channel.fine_tune);
+                    channel.period = fine_tune_period(
+                        FREQUENCY_TABLE[note_offset as usize],
+                        channel.fine_tune,
+                        song.has_standard_notes,
+                    );
                 } else {
-                    channel.period = fine_tune_period(channel.base_period, channel.fine_tune);
+                    channel.period = fine_tune_period(
+                        channel.base_period,
+                        channel.fine_tune,
+                        song.has_standard_notes,
+                    );
                 }
                 channel.arpeggio_counter += 1;
                 if channel.arpeggio_counter >= 3 {
@@ -869,6 +889,26 @@ fn update_effects(player_state: &mut PlayerState) {
     }
 }
 
+// Go through all the notes to determine if it uses only standard notes
+// ( this is a requirement for using table based fine tunes )
+fn has_standard_notes_only(patterns: &Vec<Pattern>, pattern_table: &Vec<u8>) -> bool {
+    for pattern_idx in pattern_table {
+        if *pattern_idx as usize >= patterns.len() {
+            continue;
+        }
+        let pattern = &patterns[*pattern_idx as usize];
+
+        for line in &pattern.lines {
+            for note in line {
+                if !is_standard_note_period(note.period) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
 /// Calculates the next sample pair (left, right) to be played from the song. The returned samples have the range [-1, 1]
 pub fn next_sample(song: &Song, player_state: &mut PlayerState) -> (f32, f32) {
     let mut left = 0.0;
@@ -878,7 +918,7 @@ pub fn next_sample(song: &Song, player_state: &mut PlayerState) -> (f32, f32) {
     if player_state.current_vblank_sample >= player_state.samples_per_vblank {
         player_state.current_vblank_sample = 0;
 
-        update_effects(player_state);
+        update_effects(player_state, song);
 
         // Is it time to play a new note line either by VBI counting or BPM counting
         if player_state.current_vblank >= player_state.song_speed {
@@ -895,6 +935,17 @@ pub fn next_sample(song: &Song, player_state: &mut PlayerState) -> (f32, f32) {
         if channel_info.size > 2 {
             let current_sample: &Sample = &song.samples[(channel_info.sample_num - 1) as usize];
 
+            //  check if we have reached the end of the sample ( do this before getting the sample as some note data can change the
+            // postions past available data.  )
+            if channel_info.sample_pos >= channel_info.size as f32 {
+                let overflow: f32 = channel_info.sample_pos - channel_info.size as f32;
+                channel_info.sample_pos = current_sample.repeat_offset as f32 + overflow;
+                channel_info.size = current_sample.repeat_size + current_sample.repeat_offset;
+                if channel_info.size <= 2 {
+                    continue;
+                }
+            }
+
             // Grab the sample, no filtering
             let mut channel_value: f32 =
                 current_sample.samples[(channel_info.sample_pos as u32) as usize] as f32; // [ -127, 127 ]
@@ -910,15 +961,9 @@ pub fn next_sample(song: &Song, player_state: &mut PlayerState) -> (f32, f32) {
             // max channel vol (64), sample range [ -128,127] scaled to [-1,1]
             channel_value *= channel_info.volume / (128.0 * 64.0);
 
-            // update position and check if we have reached the end of the sample
+            // update position
             channel_info.sample_pos +=
                 player_state.clock_ticks_per_device_sample / channel_info.period as f32;
-
-            if channel_info.sample_pos >= channel_info.size as f32 {
-                let overflow: f32 = channel_info.sample_pos - channel_info.size as f32;
-                channel_info.sample_pos = current_sample.repeat_offset as f32 + overflow;
-                channel_info.size = current_sample.repeat_size + current_sample.repeat_offset;
-            }
 
             let channel_selector = (channel_number as u8) & 0x0003;
             if channel_selector == 0 || channel_number as u32 == 0 || channel_number == 3 {
@@ -992,9 +1037,9 @@ pub fn read_mod_file(file_name: &str) -> Song {
     let single_pattern_size = format.num_channels * 4 * 64;
     let num_patterns = total_pattern_size / single_pattern_size;
     // The pattern space should account for all the remaining space
-    if total_pattern_size % single_pattern_size != 0 {
-        panic!("Unrecognized file format. Pattern space does not match expected size")
-    }
+    // if total_pattern_size % single_pattern_size != 0 {
+    //     panic!("Unrecognized file format. Pattern space does not match expected size")
+    // }
 
     // Read the patterns
     let mut patterns: Vec<Pattern> = Vec::new();
@@ -1010,7 +1055,6 @@ pub fn read_mod_file(file_name: &str) -> Song {
         patterns.push(pattern);
     }
 
-    //Read the sample data
     for sample_number in 0..samples.len() {
         let length = samples[sample_number].size;
         for _idx in 0..length {
@@ -1018,6 +1062,9 @@ pub fn read_mod_file(file_name: &str) -> Song {
             offset += 1;
         }
     }
+
+    // there are non standard notes, we cant use table based fine tune
+    let has_standard_notes = has_standard_notes_only(&patterns, &pattern_table);
 
     Song {
         name: String::from(song_name),
@@ -1027,5 +1074,6 @@ pub fn read_mod_file(file_name: &str) -> Song {
         pattern_table: pattern_table,
         num_used_patterns: num_used_patterns as u32,
         end_position: end_position as u32,
+        has_standard_notes: has_standard_notes,
     }
 }
