@@ -124,11 +124,46 @@ impl Sample {
 }
 
 fn note_string(period: u32) -> &'static str {
-    let idx = NOTE_FREQUENCY_STRINGS.binary_search_by(|val| val.0.cmp(&period));
-    if idx.is_ok() {
-        return NOTE_FREQUENCY_STRINGS[idx.unwrap()].1;
-    } else {
-        "..."
+    if period == 0 {
+        return "...";
+    }
+    let ret = NOTE_FREQUENCY_STRINGS.binary_search_by(|val| val.0.cmp(&period));
+    return match ret {
+        Ok(idx) => return NOTE_FREQUENCY_STRINGS[idx].1,
+        Err(idx) => {
+            if idx == 0 {
+                NOTE_FREQUENCY_STRINGS[0].1
+            } else if idx == NOTE_FREQUENCY_STRINGS.len() {
+                NOTE_FREQUENCY_STRINGS[NOTE_FREQUENCY_STRINGS.len() - 1].1
+            } else {
+                // Pick the one that is is closer to
+                if period - NOTE_FREQUENCY_STRINGS[idx - 1].0
+                    < NOTE_FREQUENCY_STRINGS[idx].0 - period
+                {
+                    NOTE_FREQUENCY_STRINGS[idx - 1].1
+                } else {
+                    NOTE_FREQUENCY_STRINGS[idx].1
+                }
+            }
+        }
+    };
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_note_string() {
+        assert_eq!(note_string(57), "B-6", "Match first note");
+        assert_eq!(note_string(1712), "C-2", "Match first note");
+        assert_eq!(note_string(2000), "C-2", "Values past lowest map to C-2");
+        assert_eq!(note_string(12), "B-6", "Values past highest map to C-2");
+        assert_eq!(note_string(0), "...", "zero maps to ellipsis");
+        assert_eq!(note_string(128), "A-5", "Umatched go to nearest");
+        assert_eq!(note_string(133), "G#5", "Umatched go to nearest");
+        assert_eq!(note_string(184), "D#5", "Umatched go to nearest");
+        assert_eq!(note_string(185), "D-5", "Umatched go to nearest");
+        assert_eq!(note_string(185), "D-5", "Umatched go to nearest");
     }
 }
 
@@ -157,4 +192,5 @@ pub fn print_song_info(song: &Song) {
 
     println!(" num patterns in song: {}", song.patterns.len());
     println!(" end position: {}", song.end_position);
+    println!(" uses standard note table: {}", song.has_standard_notes);
 }
