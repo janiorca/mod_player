@@ -296,6 +296,10 @@ enum Effect {
     DelayedSample {
         delay_ticks: u8,
     }, //ED
+    DelayedLine {
+        delay_ticks: u8,
+    }, //EE
+
     SetVibratoWave {
         wave: u8,
     },
@@ -403,6 +407,9 @@ impl Effect {
                     13 => Effect::DelayedSample {
                         delay_ticks: extended_argument as u8,
                     },
+                    14 => Effect::DelayedLine {
+                        delay_ticks: extended_argument as u8,
+                    },
                     _ => panic!(format!(
                         "unhandled extended effect number: {}",
                         extended_effect
@@ -449,14 +456,6 @@ impl Note {
         let effect_argument = note_data[3] as i8;
         let effect_number = note_data[2] & 0x0f;
         let effect = Effect::new(effect_number, effect_argument);
-
-        // TODO, So far I have found one track with non-compliant period value
-        // suppressing it and panicing on all others until I have more examples
-        // to determine better behaviour
-        // 286 ballade_pour_adeline
-        //        if period == 1688 {
-        //            period = 0;
-        //        }
 
         Note {
             sample_number,
@@ -578,6 +577,7 @@ pub struct PlayerState {
 
     next_pattern_pos: i32, // on  next line if == -1 do nothing else  go to next pattern on line next_pattern_pos
     next_position: i32, // on next line if == 1 do nothing else go to beginning of the this pattern
+    delay_line: u32,    // how many extra ticks to delay before playing next line
 }
 
 impl PlayerState {
@@ -598,6 +598,7 @@ impl PlayerState {
             clock_ticks_per_device_sample: CLOCK_TICKS_PERS_SECOND / device_sample_rate as f32,
             next_pattern_pos: -1,
             next_position: -1,
+            delay_line: 0,
             song_has_ended: false,
             has_looped: false,
         }
@@ -766,6 +767,9 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
         Effect::SetHardwareFilter { new_state: _ } => {
             // not much to do. only works on the a500
         }
+        Effect::DelayedLine { delay_ticks } => {
+            player_state.delay_line = delay_ticks as u32;
+        }
         Effect::None => {}
         _ => {
             //            println!("Unhandled effect");
@@ -922,8 +926,12 @@ pub fn next_sample(song: &Song, player_state: &mut PlayerState) -> (f32, f32) {
 
         // Is it time to play a new note line either by VBI counting or BPM counting
         if player_state.current_vblank >= player_state.song_speed {
-            player_state.current_vblank = 0;
-            play_line(song, player_state);
+            if player_state.delay_line > 0 {
+                player_state.delay_line -= 1;
+            } else {
+                player_state.current_vblank = 0;
+                play_line(song, player_state);
+            }
         }
         // apply on every vblank but only after the line has been processed
         player_state.current_vblank += 1;

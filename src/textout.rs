@@ -100,6 +100,7 @@ impl Effect {
             Effect::FineVolumeSlideDown { volume_change: _ } => String::from("FVSDn"),
             Effect::CutNote { delay: _ } => String::from("CutNt"),
             Effect::DelayedSample { delay_ticks: _ } => String::from("DlySm"),
+            Effect::DelayedLine { delay_ticks: _ } => String::from("DlyLn"),
             Effect::SetVibratoWave { wave: _ } => String::from("VibWv"),
             _ => String::from("....."),
         };

@@ -39,7 +39,8 @@ fn reg_test() {
         "1 step further.MOD",
         "BALLI.MOD",
         "ballade_pour_adeline.MOD",
-        "sarcophaser.mod"
+        "sarcophaser.mod",
+        "chcknbnk.mod",
     ];
     let mut song_checksums: HashMap<String, u64> = HashMap::new();
     let expected_results = get_expected_results().ok();
