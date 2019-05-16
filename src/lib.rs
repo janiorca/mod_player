@@ -250,6 +250,10 @@ enum Effect {
     VibratoVolumeSlide {
         volume_change: i8,
     }, // 6
+    Tremolo {
+        speed: u8,
+        amplitude: u8,
+    }, // 7
     SetSampleOffset {
         offset: u8,
     }, // 9
@@ -351,6 +355,10 @@ impl Effect {
                     }
                 }
             }
+            7 => Effect::Tremolo {
+                speed: effect_argument as u8 >> 4,
+                amplitude: effect_argument as u8 & 0x0f,
+            },
             9 => Effect::SetSampleOffset {
                 offset: effect_argument as u8,
             },
@@ -452,7 +460,7 @@ impl Note {
         } else {
             sample_number = sample_number & 0x1f;
         }
-        let mut period = ((note_data[0] & 0x0f) as u32) * 256 + (note_data[1] as u32);
+        let period = ((note_data[0] & 0x0f) as u32) * 256 + (note_data[1] as u32);
         let effect_argument = note_data[3] as i8;
         let effect_number = note_data[2] & 0x0f;
         let effect = Effect::new(effect_number, effect_argument);
@@ -524,6 +532,10 @@ struct ChannelInfo {
     vibrato_speed: u32,
     vibrato_depth: i32,
 
+    tremolo_pos: u32,
+    tremolo_speed: u32,
+    tremolo_depth: i32,
+
     retrigger_delay: u32,
     retrigger_counter: u32,
 
@@ -549,6 +561,10 @@ impl ChannelInfo {
             vibrato_pos: 0,
             vibrato_speed: 0,
             vibrato_depth: 0,
+
+            tremolo_pos: 0,
+            tremolo_speed: 0,
+            tremolo_depth: 0,
 
             retrigger_delay: 0,
             retrigger_counter: 0,
@@ -619,6 +635,8 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
     let old_vibrato_speed = player_state.channels[channel_num].vibrato_speed;
     let old_vibrato_depth = player_state.channels[channel_num].vibrato_depth;
     let old_note_change = player_state.channels[channel_num].note_change;
+    let old_tremolo_speed = player_state.channels[channel_num].tremolo_speed;
+    let old_tremolo_depth = player_state.channels[channel_num].tremolo_depth;
 
     if note.sample_number > 0 {
         // sample number 0, means that the sample keeps playing. The sample indices starts at one, so subtract 1 to get to 0 based index
@@ -638,11 +656,13 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
     player_state.channels[channel_num].vibrato_speed = 0;
     player_state.channels[channel_num].vibrato_depth = 0;
 
+    player_state.channels[channel_num].tremolo_speed = 0;
+    player_state.channels[channel_num].tremolo_depth = 0;
+
     player_state.channels[channel_num].arpeggio_counter = 0;
     player_state.channels[channel_num].arpeggio_offsets[0] = 0;
     player_state.channels[channel_num].arpeggio_offsets[1] = 0;
     if note.period != 0 {
-        player_state.channels[channel_num].base_period = note.period as u32;
         player_state.channels[channel_num].period = fine_tune_period(
             note.period,
             player_state.channels[channel_num].fine_tune,
@@ -697,6 +717,10 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
             }
         }
         Effect::Vibrato { speed, amplitude } => {
+            if speed == 0 && amplitude == 0 {
+                player_state.channels[channel_num].vibrato_speed = old_vibrato_speed;
+                player_state.channels[channel_num].vibrato_depth = old_vibrato_depth;
+            }
             player_state.channels[channel_num].vibrato_speed = speed as u32;
             player_state.channels[channel_num].vibrato_depth = amplitude as i32;
         }
@@ -712,6 +736,15 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
             player_state.channels[channel_num].vibrato_pos = old_vibrato_pos as u32;
             player_state.channels[channel_num].vibrato_speed = old_vibrato_speed as u32;
             player_state.channels[channel_num].vibrato_depth = old_vibrato_depth as i32;
+        }
+        Effect::Tremolo { speed, amplitude } => {
+            if speed == 0 && amplitude == 0 {
+                player_state.channels[channel_num].tremolo_depth = old_tremolo_depth;
+                player_state.channels[channel_num].tremolo_speed = old_tremolo_speed;
+            } else {
+                player_state.channels[channel_num].tremolo_depth = amplitude as i32;
+                player_state.channels[channel_num].tremolo_speed = speed as u32;
+            }
         }
         Effect::SetSampleOffset { offset } => {
             player_state.channels[channel_num].sample_pos = (offset as f32) * 256.0;
@@ -829,6 +862,15 @@ fn update_effects(player_state: &mut PlayerState, song: &Song) {
                 }
             }
             channel.volume += channel.volume_change;
+            if channel.tremolo_depth > 0 {
+                let base_volume = song.samples[(channel.sample_num - 1) as usize].volume as i32;
+                let tremolo_size: i32 = (VIBRATO_TABLE[(channel.tremolo_pos & 63) as usize]
+                    * channel.tremolo_depth)
+                    / 64;
+                let volume = base_volume + tremolo_size;
+                channel.tremolo_pos += channel.tremolo_speed;
+                channel.volume = volume as f32;
+            }
             if channel.volume < 0.0 {
                 channel.volume = 0.0
             }
@@ -837,26 +879,23 @@ fn update_effects(player_state: &mut PlayerState, song: &Song) {
             }
 
             if channel.arpeggio_offsets[0] != 0 || channel.arpeggio_offsets[1] != 0 {
-                let index: i32 = FREQUENCY_TABLE
+                // The base period is already fine tuned so need to search the right table
+                let index: i32 = FINE_TUNE_TABLE[channel.fine_tune as usize]
                     .binary_search(&channel.base_period)
-                    .expect("Unexpected period value") as i32;
+                    .expect(&format!(
+                        "Unexpected period value at arpeggio {}",
+                        channel.base_period
+                    )) as i32;
                 if channel.arpeggio_counter > 0 {
                     let mut note_offset = index
                         - channel.arpeggio_offsets[(channel.arpeggio_counter - 1) as usize] as i32;
                     if note_offset < 0 {
                         note_offset = 0;
                     }
-                    channel.period = fine_tune_period(
-                        FREQUENCY_TABLE[note_offset as usize],
-                        channel.fine_tune,
-                        song.has_standard_notes,
-                    );
+                    channel.period =
+                        FINE_TUNE_TABLE[channel.fine_tune as usize][note_offset as usize];
                 } else {
-                    channel.period = fine_tune_period(
-                        channel.base_period,
-                        channel.fine_tune,
-                        song.has_standard_notes,
-                    );
+                    channel.period = channel.base_period;
                 }
                 channel.arpeggio_counter += 1;
                 if channel.arpeggio_counter >= 3 {

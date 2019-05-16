@@ -28,16 +28,20 @@ fn find_mods(path: &Path) -> Vec<String> {
 }
 
 fn main() {
-    let path = env::current_dir().expect("failed to get current directory");
-
+    //    let path = env::current_dir().expect("failed to get current directory");
+    let path = std::path::PathBuf::from("C:/work/mods");
+    //    let path = std::path::PathBuf::from("C:/work/crate/mod_player/mod_files");
     println!("The current directory is {}", path.display());
     let mods: Vec<String> = find_mods(path.as_path());
     for mod_name in mods {
         println!("Processing: {}", mod_name);
         let song = mod_player::read_mod_file(&mod_name);
+        mod_player::textout::print_song_info(&song);
+        //    mod_player::textout::
         let mut f = 0.0;
         let mut player_state: mod_player::PlayerState =
             mod_player::PlayerState::new(song.format.num_channels, 48100);
+        println!("Start play loop for: {}", mod_name);
         loop {
             let (left, right) = mod_player::next_sample(&song, &mut player_state);
             f += left + right;

@@ -83,6 +83,10 @@ impl Effect {
             } => String::from("Vibra"),
             Effect::TonePortamentoVolumeSlide { volume_change: _ } => String::from("TPVos"),
             Effect::VibratoVolumeSlide { volume_change: _ } => String::from("ViVoS"),
+            Effect::Tremolo {
+                speed: _,
+                amplitude: _,
+            } => String::from("Trmlo"),
             Effect::SetSampleOffset { offset: _ } => String::from("Offst"),
             Effect::VolumeSlide { volume_change: _ } => String::from("VolSl"),
             Effect::PositionJump { next_pattern: _ } => String::from("Jump."),
