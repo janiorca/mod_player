@@ -577,7 +577,8 @@ impl ChannelInfo {
 /// Keeps track of all the dynamic state required for playing the song.
 pub struct PlayerState {
     channels: Vec<ChannelInfo>,
-    song_pattern_position: u32, // where in the pattern table are we currently
+    // where in the pattern table are we currently
+    pub song_pattern_position: u32,
     /// current line position in the pattern. Every pattern has 64 lines
     pub current_line: u32,
     /// set when the song stops playing
@@ -820,6 +821,16 @@ fn play_line(song: &Song, player_state: &mut PlayerState) {
         player_state.song_pattern_position = player_state.next_position as u32;
         player_state.current_line = 0;
         player_state.next_position = -1;
+    }
+
+    // We could have been place past the end of the song
+    if player_state.song_pattern_position >= song.num_used_patterns {
+        if song.end_position < song.num_used_patterns {
+            player_state.song_pattern_position = song.end_position;
+            player_state.has_looped = true;
+        } else {
+            player_state.song_has_ended = true;
+        }
     }
 
     let line = player_state.get_song_line(song);

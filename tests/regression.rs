@@ -42,6 +42,7 @@ fn reg_test() {
         "sarcophaser.mod",
         "chcknbnk.mod",
         "GSLINGER.MOD", // pattern 3, channel 1, tone portamento effect is definitely wrong. Sounds like it gets stuck on a repeating note. The porta speed is very fast...
+        "19xx.mod",
     ];
     let mut song_checksums: HashMap<String, u64> = HashMap::new();
     let expected_results = get_expected_results().ok();

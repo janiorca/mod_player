@@ -41,6 +41,10 @@ fn setup_stream(song: sync::Arc<mod_player::Song>) -> mpsc::Sender<PlayerCommand
                 if player_state.current_line == 0 {
                     println!("");
                 }
+                print!(
+                    "{} : {} ",
+                    player_state.song_pattern_position, player_state.current_line
+                );
                 mod_player::textout::print_line(player_state.get_song_line(&song));
                 last_line_pos = player_state.current_line;
             }
@@ -62,8 +66,9 @@ fn setup_stream(song: sync::Arc<mod_player::Song>) -> mpsc::Sender<PlayerCommand
 }
 
 fn main() {
-    let song = sync::Arc::new(mod_player::read_mod_file("mod_files/wasteland.mod")); // pattern space issue
-                                                                                      //    let song = sync::Arc::new( mod_player::read_mod_file("1 step further.MOD") );     // pattern space issue
+    //    let song = sync::Arc::new(mod_player::read_mod_file("mod_files/wasteland.mod")); // pattern space issue
+    let song = sync::Arc::new(mod_player::read_mod_file("mod_files/19XX.mod")); // pattern space issue
+
     mod_player::textout::print_song_info(&song);
     let tx = setup_stream(song.clone());
     loop {
