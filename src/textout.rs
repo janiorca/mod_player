@@ -191,8 +191,10 @@ pub fn print_song_info(song: &Song) {
 
     println!("Number of channels: {}", song.format.num_channels);
     println!("Number of samples: {}", song.format.num_samples);
-    for sample in &song.samples {
-        sample.print()
+    //    for sample in &song.samples {
+    for sample_num in 0..song.samples.len() {
+        println!("Sample #{}", sample_num + 1);
+        song.samples[sample_num].print();
     }
 
     println!(" num patterns in song: {}", song.patterns.len());
