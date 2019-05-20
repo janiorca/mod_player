@@ -525,7 +525,9 @@ struct ChannelInfo {
     volume: f32,        // max 1.0
     volume_change: f32, // max 1.0
     note_change: i32,
-    period_target: u32, // note portamento target
+    period_target: u32,     // note portamento target
+    last_porta_speed: i32,  // last portamento to note and speed parameters
+    last_porta_target: u32, // must be tracked separately to porta up and down ( and these may be referred to several lines later)
 
     base_period: u32,
     vibrato_pos: u32,
@@ -556,6 +558,8 @@ impl ChannelInfo {
             volume_change: 0.0,
             note_change: 0,
             period_target: 0,
+            last_porta_speed: 0,
+            last_porta_target: 0,
 
             base_period: 0,
             vibrato_pos: 0,
@@ -630,47 +634,43 @@ impl PlayerState {
 }
 
 fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, song: &Song) {
-    let old_period = player_state.channels[channel_num].period;
-    let old_period_target = player_state.channels[channel_num].period_target;
-    let old_vibrato_pos = player_state.channels[channel_num].vibrato_pos;
-    let old_vibrato_speed = player_state.channels[channel_num].vibrato_speed;
-    let old_vibrato_depth = player_state.channels[channel_num].vibrato_depth;
-    let old_note_change = player_state.channels[channel_num].note_change;
-    let old_tremolo_speed = player_state.channels[channel_num].tremolo_speed;
-    let old_tremolo_depth = player_state.channels[channel_num].tremolo_depth;
+    let channel = &mut player_state.channels[channel_num];
+
+    let old_period = channel.period;
+    let old_period_target = channel.period_target;
+    let old_vibrato_pos = channel.vibrato_pos;
+    let old_vibrato_speed = channel.vibrato_speed;
+    let old_vibrato_depth = channel.vibrato_depth;
+    let old_note_change = channel.note_change;
+    let old_tremolo_speed = channel.tremolo_speed;
+    let old_tremolo_depth = channel.tremolo_depth;
+    let old_sample_pos = channel.sample_pos;
 
     if note.sample_number > 0 {
         // sample number 0, means that the sample keeps playing. The sample indices starts at one, so subtract 1 to get to 0 based index
         let current_sample: &Sample = &song.samples[(note.sample_number - 1) as usize];
-        player_state.channels[channel_num].volume = current_sample.volume as f32; // Get volume from sample
-                                                                                  //        player_state.channels[channel_num].size =  current_sample.repeat_size + current_sample.repeat_offset;
-        player_state.channels[channel_num].size = current_sample.size;
-        player_state.channels[channel_num].sample_num = note.sample_number;
-        player_state.channels[channel_num].fine_tune = current_sample.fine_tune as u32;
+        channel.volume = current_sample.volume as f32; // Get volume from sample
+                                                       //        channel.size =  current_sample.repeat_size + current_sample.repeat_offset;
+        channel.size = current_sample.size;
+        channel.sample_num = note.sample_number;
+        channel.fine_tune = current_sample.fine_tune as u32;
     }
 
-    player_state.channels[channel_num].volume_change = 0.0;
-    player_state.channels[channel_num].note_change = 0;
-    player_state.channels[channel_num].retrigger_delay = 0;
+    channel.volume_change = 0.0;
+    channel.note_change = 0;
+    channel.retrigger_delay = 0;
+    channel.vibrato_speed = 0;
+    channel.vibrato_depth = 0;
+    channel.tremolo_speed = 0;
+    channel.tremolo_depth = 0;
 
-    player_state.channels[channel_num].vibrato_pos = 0;
-    player_state.channels[channel_num].vibrato_speed = 0;
-    player_state.channels[channel_num].vibrato_depth = 0;
-
-    player_state.channels[channel_num].tremolo_speed = 0;
-    player_state.channels[channel_num].tremolo_depth = 0;
-
-    player_state.channels[channel_num].arpeggio_counter = 0;
-    player_state.channels[channel_num].arpeggio_offsets[0] = 0;
-    player_state.channels[channel_num].arpeggio_offsets[1] = 0;
+    channel.arpeggio_counter = 0;
+    channel.arpeggio_offsets[0] = 0;
+    channel.arpeggio_offsets[1] = 0;
     if note.period != 0 {
-        player_state.channels[channel_num].period = fine_tune_period(
-            note.period,
-            player_state.channels[channel_num].fine_tune,
-            song.has_standard_notes,
-        );
-        player_state.channels[channel_num].base_period = player_state.channels[channel_num].period;
-        player_state.channels[channel_num].sample_pos = 0.0;
+        channel.period = fine_tune_period(note.period, channel.fine_tune, song.has_standard_notes);
+        channel.base_period = channel.period;
+        channel.sample_pos = 0.0;
     }
 
     match note.effect {
@@ -692,69 +692,85 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
             chord_offset_1,
             chord_offset_2,
         } => {
-            player_state.channels[channel_num].arpeggio_offsets[0] = chord_offset_1 as u32;
-            player_state.channels[channel_num].arpeggio_offsets[1] = chord_offset_2 as u32;
-            player_state.channels[channel_num].arpeggio_counter = 0;
+            channel.arpeggio_offsets[0] = chord_offset_1 as u32;
+            channel.arpeggio_offsets[1] = chord_offset_2 as u32;
+            channel.arpeggio_counter = 0;
         }
         Effect::SlideUp { speed } => {
-            player_state.channels[channel_num].note_change = -(speed as i32);
+            channel.note_change = -(speed as i32);
         }
         Effect::SlideDown { speed } => {
-            player_state.channels[channel_num].note_change = speed as i32;
+            channel.note_change = speed as i32;
         }
         Effect::TonePortamento { speed } => {
             // if a new sound was played ( period was so on the note ) that is the new target. otherwise carry on with old target
-            player_state.channels[channel_num].period = old_period;
             if note.period != 0 {
-                player_state.channels[channel_num].period_target = note.period;
+                channel.period_target = channel.period; // use channel.period which has already been fine-tuned
             } else {
-                player_state.channels[channel_num].period_target = old_period_target;
+                if channel.last_porta_target != 0 {
+                    // use the last porta target if it has been set ( some mod tunes set tone porta without history or note)
+                    channel.period_target = channel.last_porta_target;
+                } else {
+                    // if no note available, use current period ( making this a no-op)
+                    channel.period_target = old_period;
+                }
             }
-            // only change speed if it non-zero. ( zero means to carry on with the effects as before)
+            channel.period = old_period; // reset back to old after we used it
             if speed != 0 {
-                player_state.channels[channel_num].note_change = speed as i32;
+                // only change speed if it non-zero. ( zero means to carry on with the effects as before)
+                channel.note_change = speed as i32;
             } else {
-                player_state.channels[channel_num].note_change = old_note_change;
+                channel.note_change = channel.last_porta_speed;
             }
+            // store porta values. Much later portamento effects could still depend on them
+            channel.last_porta_speed = channel.note_change;
+            channel.last_porta_target = channel.period_target;
+            channel.sample_pos = old_sample_pos;
         }
         Effect::Vibrato { speed, amplitude } => {
-            if speed == 0 && amplitude == 0 {
-                player_state.channels[channel_num].vibrato_speed = old_vibrato_speed;
-                player_state.channels[channel_num].vibrato_depth = old_vibrato_depth;
+            if speed == 0 {
+                channel.vibrato_speed = old_vibrato_speed;
             }
-            player_state.channels[channel_num].vibrato_speed = speed as u32;
-            player_state.channels[channel_num].vibrato_depth = amplitude as i32;
+            if amplitude == 0 {
+                channel.vibrato_depth = old_vibrato_depth;
+            }
         }
         Effect::TonePortamentoVolumeSlide { volume_change } => {
             // Continue
-            player_state.channels[channel_num].volume_change = volume_change as f32;
-            player_state.channels[channel_num].period_target = old_period_target;
-            player_state.channels[channel_num].period = old_period;
-            player_state.channels[channel_num].note_change = old_note_change;
+            channel.volume_change = volume_change as f32;
+            if note.period != 0 {
+                channel.period_target = channel.period;
+            } else {
+                channel.period_target = channel.last_porta_target;
+            }
+            channel.period = old_period;
+            channel.sample_pos = old_sample_pos;
+            channel.last_porta_target = channel.period_target;
+            channel.note_change = channel.last_porta_speed;
         }
         Effect::VibratoVolumeSlide { volume_change } => {
-            player_state.channels[channel_num].volume_change = volume_change as f32;
-            player_state.channels[channel_num].vibrato_pos = old_vibrato_pos as u32;
-            player_state.channels[channel_num].vibrato_speed = old_vibrato_speed as u32;
-            player_state.channels[channel_num].vibrato_depth = old_vibrato_depth as i32;
+            channel.volume_change = volume_change as f32;
+            channel.vibrato_pos = old_vibrato_pos as u32;
+            channel.vibrato_speed = old_vibrato_speed as u32;
+            channel.vibrato_depth = old_vibrato_depth as i32;
         }
         Effect::Tremolo { speed, amplitude } => {
             if speed == 0 && amplitude == 0 {
-                player_state.channels[channel_num].tremolo_depth = old_tremolo_depth;
-                player_state.channels[channel_num].tremolo_speed = old_tremolo_speed;
+                channel.tremolo_depth = old_tremolo_depth;
+                channel.tremolo_speed = old_tremolo_speed;
             } else {
-                player_state.channels[channel_num].tremolo_depth = amplitude as i32;
-                player_state.channels[channel_num].tremolo_speed = speed as u32;
+                channel.tremolo_depth = amplitude as i32;
+                channel.tremolo_speed = speed as u32;
             }
         }
         Effect::SetSampleOffset { offset } => {
-            player_state.channels[channel_num].sample_pos = (offset as f32) * 256.0;
+            channel.sample_pos = (offset as f32) * 256.0;
         }
         Effect::VolumeSlide { volume_change } => {
-            player_state.channels[channel_num].volume_change = volume_change as f32;
+            channel.volume_change = volume_change as f32;
         }
         Effect::SetVolume { volume } => {
-            player_state.channels[channel_num].volume = volume as f32;
+            channel.volume = volume as f32;
         }
         Effect::PatternBreak { next_pattern_pos } => {
             player_state.next_pattern_pos = next_pattern_pos as i32;
@@ -766,37 +782,29 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
             player_state.next_position = next_pattern as i32;
         }
         Effect::FinePortaUp { period_change } => {
-            player_state.channels[channel_num].period = change_note(
-                player_state.channels[channel_num].period,
-                -(period_change as i32),
-            );
+            channel.period = change_note(channel.period, -(period_change as i32));
         }
         Effect::FinePortaDown { period_change } => {
-            player_state.channels[channel_num].period = change_note(
-                player_state.channels[channel_num].period,
-                period_change as i32,
-            );
+            channel.period = change_note(channel.period, period_change as i32);
         }
         Effect::RetriggerSample { retrigger_delay } => {
-            player_state.channels[channel_num].retrigger_delay = retrigger_delay as u32;
-            player_state.channels[channel_num].retrigger_counter = 0;
+            channel.retrigger_delay = retrigger_delay as u32;
+            channel.retrigger_counter = 0;
         }
         Effect::FineVolumeSlideUp { volume_change } => {
-            player_state.channels[channel_num].volume =
-                player_state.channels[channel_num].volume + volume_change as f32;
-            if player_state.channels[channel_num].volume > 64.0 {
-                player_state.channels[channel_num].volume = 64.0;
+            channel.volume = channel.volume + volume_change as f32;
+            if channel.volume > 64.0 {
+                channel.volume = 64.0;
             }
         }
         Effect::FineVolumeSlideDown { volume_change } => {
-            player_state.channels[channel_num].volume =
-                player_state.channels[channel_num].volume - volume_change as f32;
-            if player_state.channels[channel_num].volume < 0.0 {
-                player_state.channels[channel_num].volume = 0.0;
+            channel.volume = channel.volume - volume_change as f32;
+            if channel.volume < 0.0 {
+                channel.volume = 0.0;
             }
         }
         Effect::CutNote { delay } => {
-            player_state.channels[channel_num].cut_note_delay = delay as u32;
+            channel.cut_note_delay = delay as u32;
         }
         Effect::SetHardwareFilter { new_state: _ } => {
             // not much to do. only works on the a500
@@ -925,13 +933,11 @@ fn update_effects(player_state: &mut PlayerState, song: &Song) {
                         channel.period = change_note(channel.period, channel.note_change);
                         if channel.period >= channel.period_target {
                             channel.period = channel.period_target;
-                            channel.note_change = 0;
                         }
                     } else {
                         channel.period = change_note(channel.period, -channel.note_change);
                         if channel.period <= channel.period_target {
                             channel.period = channel.period_target;
-                            channel.note_change = 0;
                         }
                     }
                 } else {
@@ -1071,8 +1077,7 @@ pub fn read_mod_file(file_name: &str) -> Song {
         offset += 30;
     }
 
-    // Figure out whe / how to stop and repeat pos ( with option to repeat in the player )
-
+    // Figure out where to stop and repeat pos ( with option to repeat in the player )
     let num_used_patterns: u8 = file_data[offset];
     let end_position: u8 = file_data[offset + 1];
     offset += 2;
