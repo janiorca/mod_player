@@ -32,8 +32,7 @@ fn reg_test() {
         "cream_of_the_earth.mod",
         "switchback.mod",
         "stardstm.MOD",
-        "overload.mod", // sounds off towards the end
-        "sarcophaser.MOD",
+        "overload.mod",
         "BOG_WRAITH.mod",
         "wasteland.mod",
         "1 step further.MOD",
@@ -41,7 +40,7 @@ fn reg_test() {
         "ballade_pour_adeline.MOD",
         "sarcophaser.mod",
         "chcknbnk.mod",
-        "GSLINGER.MOD", // pattern 3, channel 1, tone portamento effect is definitely wrong. Sounds like it gets stuck on a repeating note. The porta speed is very fast...
+        "GSLINGER.MOD",
         "19xx.mod",
     ];
     let mut song_checksums: HashMap<String, u64> = HashMap::new();
