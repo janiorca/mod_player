@@ -66,7 +66,7 @@ fn setup_stream(song: sync::Arc<mod_player::Song>) -> mpsc::Sender<PlayerCommand
 }
 
 fn main() {
-    let song = sync::Arc::new(mod_player::read_mod_file("mod_files/19XX.mod")); // pattern space issue
+    let song = sync::Arc::new(mod_player::read_mod_file("mod_files/chcknbnk.mod"));
 
     mod_player::textout::print_song_info(&song);
     let tx = setup_stream(song.clone());
