@@ -42,6 +42,7 @@ fn reg_test() {
         "chcknbnk.mod",
         "GSLINGER.MOD",
         "19xx.mod",
+        "JARRE.mod", // weird broken mod. incomplete last pattern????
     ];
     let mut song_checksums: HashMap<String, u64> = HashMap::new();
     let expected_results = get_expected_results().ok();

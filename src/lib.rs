@@ -48,6 +48,7 @@ use std::fs;
 pub mod textout;
 
 const CLOCK_TICKS_PERS_SECOND: f32 = 3579545.0; // Amiga hw clcok ticks per second
+// const CLOCK_TICKS_PERS_SECOND: f32 = 3579545.0; // NTSC
 
 static VIBRATO_TABLE: [i32; 64] = [
     0, 24, 49, 74, 97, 120, 141, 161, 180, 197, 212, 224, 235, 244, 250, 253, 255, 253, 250, 244,
@@ -222,10 +223,8 @@ impl Sample {
 }
 
 enum Effect {
-    /*  Tremolo = 7,
-        SetPanningPosition = 8,
-        ExtendedEffects = 14,   //e
-    */
+    /*  SetPanningPosition = 8,
+     */
     None, // 0
     Arpeggio {
         chord_offset_1: u8,
@@ -254,6 +253,9 @@ enum Effect {
         speed: u8,
         amplitude: u8,
     }, // 7
+    Pan {
+        position: u8,
+    }, // 8
     SetSampleOffset {
         offset: u8,
     }, // 9
@@ -282,6 +284,9 @@ enum Effect {
     FinePortaDown {
         period_change: u8,
     }, //E2
+    Glissando {
+        use_smooth_slide: bool,
+    }, //E2
     PatternLoop {
         arg: u8,
     }, //E6
@@ -303,9 +308,15 @@ enum Effect {
     DelayedLine {
         delay_ticks: u8,
     }, //EE
+    InvertLoop {
+        loop_position: u8,
+    }, //EF
 
     SetVibratoWave {
         wave: u8,
+    },
+    SetFineTune {
+        fine_tune: u8,
     },
 }
 
@@ -359,6 +370,9 @@ impl Effect {
                 speed: effect_argument as u8 >> 4,
                 amplitude: effect_argument as u8 & 0x0f,
             },
+            8 => Effect::Pan {
+                position: effect_argument as u8,
+            },
             9 => Effect::SetSampleOffset {
                 offset: effect_argument as u8,
             },
@@ -396,9 +410,17 @@ impl Effect {
                     2 => Effect::FinePortaDown {
                         period_change: extended_argument as u8,
                     },
-                    6 => match extended_argument {
-                        0 => Effect::PatternLoop { arg: 0 },
-                        _ => panic!("unhandled PATTERN LOOp Trigger"),
+                    3 => Effect::Glissando {
+                        use_smooth_slide: extended_argument != 0,
+                    },
+                    4 => Effect::SetVibratoWave {
+                        wave: extended_argument,
+                    },
+                    5 => Effect::SetFineTune {
+                        fine_tune: extended_argument,
+                    },
+                    6 => Effect::PatternLoop {
+                        arg: extended_argument as u8,
                     },
                     9 => Effect::RetriggerSample {
                         retrigger_delay: extended_argument as u8,
@@ -417,6 +439,9 @@ impl Effect {
                     },
                     14 => Effect::DelayedLine {
                         delay_ticks: extended_argument as u8,
+                    },
+                    15 => Effect::InvertLoop {
+                        loop_position: extended_argument as u8,
                     },
                     _ => panic!(format!(
                         "unhandled extended effect number: {}",
@@ -599,6 +624,10 @@ pub struct PlayerState {
     next_pattern_pos: i32, // on  next line if == -1 do nothing else  go to next pattern on line next_pattern_pos
     next_position: i32, // on next line if == 1 do nothing else go to beginning of the this pattern
     delay_line: u32,    // how many extra ticks to delay before playing next line
+
+    pattern_loop_position: u32,
+    pattern_loop: i32,
+    set_pattern_position: bool, // set to jump
 }
 
 impl PlayerState {
@@ -622,6 +651,10 @@ impl PlayerState {
             delay_line: 0,
             song_has_ended: false,
             has_looped: false,
+
+            pattern_loop_position: 0,
+            pattern_loop: 0,
+            set_pattern_position: false,
         }
     }
 
@@ -637,11 +670,9 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
     let channel = &mut player_state.channels[channel_num];
 
     let old_period = channel.period;
-    let old_period_target = channel.period_target;
     let old_vibrato_pos = channel.vibrato_pos;
     let old_vibrato_speed = channel.vibrato_speed;
     let old_vibrato_depth = channel.vibrato_depth;
-    let old_note_change = channel.note_change;
     let old_tremolo_speed = channel.tremolo_speed;
     let old_tremolo_depth = channel.tremolo_depth;
     let old_sample_pos = channel.sample_pos;
@@ -787,6 +818,21 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
         Effect::FinePortaDown { period_change } => {
             channel.period = change_note(channel.period, period_change as i32);
         }
+        Effect::PatternLoop { arg } => {
+            if arg == 0 {
+                // arg 0 marks the loop start position
+                player_state.pattern_loop_position = player_state.song_pattern_position;
+            } else {
+                if player_state.pattern_loop == 0 {
+                    player_state.pattern_loop = arg as i32;
+                } else {
+                    player_state.pattern_loop -= 1;
+                }
+                if player_state.pattern_loop > 0 {
+                    player_state.set_pattern_position = true;
+                }
+            }
+        }
         Effect::RetriggerSample { retrigger_delay } => {
             channel.retrigger_delay = retrigger_delay as u32;
             channel.retrigger_counter = 0;
@@ -829,6 +875,10 @@ fn play_line(song: &Song, player_state: &mut PlayerState) {
         player_state.song_pattern_position = player_state.next_position as u32;
         player_state.current_line = 0;
         player_state.next_position = -1;
+    }
+    if player_state.set_pattern_position {
+        player_state.set_pattern_position = false;
+        player_state.current_line = player_state.pattern_loop_position;
     }
 
     // We could have been place past the end of the song
@@ -1045,12 +1095,26 @@ pub fn next_sample(song: &Song, player_state: &mut PlayerState) -> (f32, f32) {
  */
 fn get_format(file_data: &Vec<u8>) -> FormatDescription {
     let format_tag = String::from_utf8_lossy(&file_data[1080..1084]);
+    println!("formtat tag: {}", format_tag);
     match format_tag.as_ref() {
         "M.K." | "FLT4" | "M!K!" | "4CHN" => FormatDescription {
             num_channels: 4,
             num_samples: 31,
             has_tag: true,
         },
+        "8CHN" => FormatDescription {
+            num_channels: 8,
+            num_samples: 31,
+            has_tag: true,
+        },
+        "CD81" => FormatDescription {
+            num_channels: 8,
+            num_samples: 31,
+            has_tag: true,
+        },
+        "CD61" => {
+            panic!("unhandled tag cd61");
+        }
         _ => FormatDescription {
             num_channels: 4,
             num_samples: 15,
@@ -1098,11 +1162,14 @@ pub fn read_mod_file(file_name: &str) -> Song {
     // The pattern take up all the space that remains after everything else has been accounted for
     let total_pattern_size = file_data.len() as u32 - (offset as u32) - total_sample_size;
     let single_pattern_size = format.num_channels * 4 * 64;
-    let num_patterns = total_pattern_size / single_pattern_size;
-    // The pattern space should account for all the remaining space
-    // if total_pattern_size % single_pattern_size != 0 {
-    //     panic!("Unrecognized file format. Pattern space does not match expected size")
-    // }
+    let mut num_patterns = total_pattern_size / single_pattern_size;
+    // Find the highest pattern referenced within the used patter references. This is the minimum number of patterns we must load
+    let slc = &pattern_table[0..(num_used_patterns as usize)];
+    let min_pattern_required = *slc.iter().max().unwrap() + 1;
+    // we must read AT LEAST the max_pattern_required patterns
+    if (min_pattern_required as u32) > num_patterns {
+        num_patterns = min_pattern_required as u32;
+    }
 
     // Read the patterns
     let mut patterns: Vec<Pattern> = Vec::new();
@@ -1117,6 +1184,11 @@ pub fn read_mod_file(file_name: &str) -> Song {
         }
         patterns.push(pattern);
     }
+
+    // Some mods have weird garbage between the end of the pattern data and the samples
+    // ( and some weird files do not have enough for both patterns ans samples. Effectively some storage is used for both!!)
+    // Skip the potential garbage by working out the sample position from the back of the file
+    offset = (file_data.len() as u32 - total_sample_size) as usize;
 
     for sample_number in 0..samples.len() {
         let length = samples[sample_number].size;
