@@ -48,7 +48,7 @@ use std::fs;
 pub mod textout;
 
 const CLOCK_TICKS_PERS_SECOND: f32 = 3579545.0; // Amiga hw clcok ticks per second
-// const CLOCK_TICKS_PERS_SECOND: f32 = 3579545.0; // NTSC
+                                                // const CLOCK_TICKS_PERS_SECOND: f32 = 3579545.0; // NTSC
 
 static VIBRATO_TABLE: [i32; 64] = [
     0, 24, 49, 74, 97, 120, 141, 161, 180, 197, 212, 224, 235, 244, 250, 253, 255, 253, 250, 244,
@@ -394,7 +394,7 @@ impl Effect {
                 volume: effect_argument as u8,
             },
             13 => Effect::PatternBreak {
-                next_pattern_pos: ((0xf0 & (effect_argument as u32)) * 10
+                next_pattern_pos: (((0xf0 & (effect_argument as u32)) >> 4) * 10
                     + (effect_argument as u32 & 0x0f)) as u8,
             },
             14 => {
