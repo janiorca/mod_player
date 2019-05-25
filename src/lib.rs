@@ -795,7 +795,15 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
             }
         }
         Effect::SetSampleOffset { offset } => {
-            channel.sample_pos = (offset as f32) * 256.0;
+            // Ignore, unless we are also playing a new sound
+            if note.period != 0 && channel.sample_num > 0 {
+                channel.sample_pos = (offset as f32) * 256.0;
+                // Does the offset go past the end of the sound
+                let current_sample: &Sample = &song.samples[(channel.sample_num - 1) as usize];
+                if channel.sample_pos as u32 > current_sample.size {
+                    channel.sample_pos = (channel.sample_pos as u32 % current_sample.size) as f32
+                }
+            }
         }
         Effect::VolumeSlide { volume_change } => {
             channel.volume_change = volume_change as f32;
