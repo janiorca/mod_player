@@ -43,141 +43,23 @@ mod tests {
     }
 }
 
-use std::fs;
-
+mod loader;
+pub use loader::read_mod_file;
+mod static_tables;
 pub mod textout;
 
 const CLOCK_TICKS_PERS_SECOND: f32 = 3579545.0; // Amiga hw clcok ticks per second
                                                 // const CLOCK_TICKS_PERS_SECOND: f32 = 3579545.0; // NTSC
 
-static VIBRATO_TABLE: [i32; 64] = [
-    0, 24, 49, 74, 97, 120, 141, 161, 180, 197, 212, 224, 235, 244, 250, 253, 255, 253, 250, 244,
-    235, 224, 212, 197, 180, 161, 141, 120, 97, 74, 49, 24, -0, -24, -49, -74, -97, -120, -141,
-    -161, -180, -197, -212, -224, -235, -244, -250, -253, -255, -253, -250, -244, -235, -224, -212,
-    -197, -180, -161, -141, -120, -97, -74, -49, -24,
-];
-
-#[rustfmt::skip]
-static FREQUENCY_TABLE: [u32; 60] = [
-    // B    A#      A       G#      G       F#      F       E       D#      D       C#      C
-    57,     60,     64,     67,     71,     76,     80,     85,     90,     95,     101,    107, 
-    113,    120,    127,    135,    143,    151,    160,    170,    180,    190,    202,    214, 
-    226,    240,    254,    269,    285,    302,    320,    339,    360,    381,    404,    428, 
-    453,    480,    508,    538,    570,    604,    640,    678,    720,    762,    808,    856, 
-    907,    961,    1017,   1077,   1141,   1209,   1281,   1357,   1440,   1525,   1616,   1712,
-];
-
-#[rustfmt::skip]
-static FINE_TUNE_TABLE : [ [ u32; 60 ]; 16 ] = [
-[   56, 60, 63, 67, 71, 75, 80, 85, 90, 95, 101, 107,                                       // 0
-    113, 120, 127, 135, 143, 151, 160, 170, 180, 190, 202, 214,
-    226, 240, 254, 269, 285, 302, 320, 339, 360, 381, 404, 428,
-    453, 480, 508, 538, 570, 604, 640, 678, 720, 762, 808, 856,
-    906, 960, 1016, 1076, 1140, 1208, 1280, 1356, 1440, 1524, 1616, 1712 ],
-[   56, 59, 63, 67, 71, 75, 79, 84, 89, 94, 100, 106,                                       // 1
-    113, 119, 126, 134, 142, 150, 159, 169, 179, 189, 201, 213,
-    225, 239, 253, 268, 284, 300, 318, 337, 357, 379, 401, 425,
-    450, 477, 505, 535, 567, 601, 637, 674, 715, 757, 802, 850,
-    900, 954, 1010, 1070, 1134, 1202, 1274, 1348, 1430, 1514, 1604, 1700 ],
-[   56, 59, 62, 66, 70, 74, 79, 83, 88, 94, 99, 105,                                        // 2
-    112, 118, 125, 133, 141, 149, 158, 167, 177, 188, 199, 211,
-    224, 237, 251, 266, 282, 298, 316, 335, 355, 376, 398, 422,
-    447, 474, 502, 532, 563, 597, 632, 670, 709, 752, 796, 844,
-    894, 948, 1004, 1064, 1126, 1194, 1264, 1340, 1418, 1504, 1592, 1688 ],
-[   55, 59, 62, 66, 70, 74, 78, 83, 88, 93, 99, 104,                                        // 3
-    111, 118, 125, 132, 140, 148, 157, 166, 176, 187, 198, 209,
-    222, 235, 249, 264, 280, 296, 314, 332, 352, 373, 395, 419,
-    444, 470, 498, 528, 559, 592, 628, 665, 704, 746, 791, 838,
-    888, 940, 996, 1056, 1118, 1184, 1256, 1330, 1408, 1492, 1582, 1676 ],
-[   55, 58, 62, 65, 69, 73, 78, 82, 87, 92, 98, 104,                                        // 4
-    110, 117, 124, 131, 139, 147, 156, 165, 175, 185, 196, 208,
-    220, 233, 247, 262, 278, 294, 312, 330, 350, 370, 392, 416,
-    441, 467, 495, 524, 555, 588, 623, 660, 699, 741, 785, 832,
-    882, 934, 990, 1048, 1110, 1176, 1246, 1320, 1398, 1482, 1570, 1664 ],
-[   54, 58, 61, 65, 69, 73, 77, 82, 87, 92, 97, 103,                                        // 5
-    109, 116, 123, 130, 138, 146, 155, 164, 174, 184, 195, 206,
-    219, 232, 245, 260, 276, 292, 309, 328, 347, 368, 390, 413,
-    437, 463, 491, 520, 551, 584, 619, 655, 694, 736, 779, 826,
-    874, 926, 982, 1040, 1102, 1168, 1238, 1310, 1388, 1472, 1558, 1652 ],
-[   54, 57, 61, 64, 68, 72, 77, 81, 86, 91, 96, 102,                                        // 6
-    109, 115, 122, 129, 137, 145, 154, 163, 172, 183, 193, 205,
-    217, 230, 244, 258, 274, 290, 307, 325, 345, 365, 387, 410,
-    434, 460, 487, 516, 547, 580, 614, 651, 689, 730, 774, 820,
-    868, 920, 974, 1032, 1094, 1160, 1228, 1302, 1378, 1460, 1548, 1640 ],
-[   54, 57, 60, 64, 68, 72, 76, 80, 85, 90, 96, 102,                                        // 7
-    108, 114, 121, 128, 136, 144, 152, 161, 171, 181, 192, 204,
-    216, 228, 242, 256, 272, 288, 305, 323, 342, 363, 384, 407,
-    431, 457, 484, 513, 543, 575, 610, 646, 684, 725, 768, 814,
-    862, 914, 968, 1026, 1086, 1150, 1220, 1292, 1368, 1450, 1536, 1628 ],
-[   60, 63, 67, 71, 75, 80, 85, 90, 95, 101, 107, 113,                                      // -8
-    120, 127, 135, 143, 151, 160, 170, 180, 190, 202, 214, 226,
-    240, 254, 269, 285, 302, 320, 339, 360, 381, 404, 428, 453,
-    480, 508, 538, 570, 604, 640, 678, 720, 762, 808, 856, 907,
-    960, 1016, 1076, 1140, 1208, 1280, 1356, 1440, 1524, 1616, 1712, 1814 ],
-[   59, 63, 67, 71, 75, 79, 84, 89, 94, 100, 106, 112,
-    119, 126, 134, 142, 150, 159, 169, 179, 189, 200, 212, 225,
-    238, 253, 268, 284, 300, 318, 337, 357, 379, 401, 425, 450,
-    477, 505, 535, 567, 601, 636, 675, 715, 757, 802, 850, 900,
-    954, 1010, 1070, 1134, 1202, 1272, 1350, 1430, 1514, 1604, 1700, 1800 ],
-[   59, 62, 66, 70, 74, 79, 83, 88, 94, 99, 105, 111,
-    118, 125, 133, 141, 149, 158, 167, 177, 188, 199, 211, 223,
-    237, 251, 266, 282, 298, 316, 335, 355, 376, 398, 422, 447,
-    474, 502, 532, 563, 597, 632, 670, 709, 752, 796, 844, 894,
-    948, 1004, 1064, 1126, 1194, 1264, 1340, 1418, 1504, 1592, 1688, 1788 ],
-[   59, 62, 66, 70, 74, 78, 83, 88, 93, 99, 104, 111,
-    118, 125, 132, 140, 148, 157, 166, 176, 187, 198, 209, 222,
-    235, 249, 264, 280, 296, 314, 332, 352, 373, 395, 419, 444,
-    470, 498, 528, 559, 592, 628, 665, 704, 746, 791, 838, 887,
-    940, 996, 1056, 1118, 1184, 1256, 1330, 1408, 1492, 1582, 1676, 1774 ],
-[   58, 61, 65, 69, 73, 78, 82, 87, 92, 98, 104, 110,
-    117, 123, 131, 139, 147, 156, 165, 175, 185, 196, 208, 220,
-    233, 247, 262, 278, 294, 312, 330, 350, 370, 392, 416, 441,
-    467, 494, 524, 555, 588, 623, 660, 699, 741, 785, 832, 881,
-    934, 988, 1048, 1110, 1176, 1246, 1320, 1398, 1482, 1570, 1664, 1762 ],
-[   58, 61, 65, 69, 73, 77, 82, 87, 92, 97, 103, 109,
-    116, 123, 130, 138, 146, 155, 164, 174, 184, 195, 206, 219,
-    232, 245, 260, 276, 292, 309, 328, 347, 368, 390, 413, 437,
-    463, 491, 520, 551, 584, 619, 655, 694, 736, 779, 826, 875,
-    926, 982, 1040, 1102, 1168, 1238, 1310, 1388, 1472, 1558, 1652, 1750 ],
-[   57, 61, 64, 68, 72, 77, 81, 86, 91, 96, 102, 108,
-    115, 122, 129, 137, 145, 154, 163, 172, 183, 193, 205, 217,
-    230, 244, 258, 274, 290, 307, 325, 345, 365, 387, 410, 434,
-    460, 487, 516, 547, 580, 614, 651, 689, 730, 774, 820, 868,
-    920, 974, 1032, 1094, 1160, 1228, 1302, 1378, 1460, 1548, 1640, 1736 ],
-[   57, 60, 64, 68, 72, 76, 80, 85, 90, 96, 101, 108,
-    114, 121, 128, 136, 144, 152, 161, 171, 181, 192, 203, 216,
-    228, 242, 256, 272, 288, 305, 323, 342, 363, 384, 407, 431,
-    457, 484, 513, 543, 575, 610, 646, 684, 725, 768, 814, 862,
-    914, 968, 1026, 1086, 1150, 1220, 1292, 1368, 1450, 1536, 1628, 1724,
-]];
-
-static SCALE_FINE_TUNE: [f32; 16] = [
-    // from 0 to 7
-    1.0, 1.0072464, 1.0145453, 1.0218972, 1.0293022, 1.036761, 1.0442737, 1.051841,
-    // from -8 to -1
-    0.9438743, 0.950714, 0.9576033, 0.96454245, 0.9715319, 0.9785721, 0.9856632, 0.9928057,
-];
-
 fn fine_tune_period(period: u32, fine_tune: u32, use_fine_tune_table: bool) -> u32 {
     if use_fine_tune_table {
-        let index: i32 = FREQUENCY_TABLE
+        let index: i32 = static_tables::FREQUENCY_TABLE
             .binary_search(&period)
             .expect("Unexpected period value") as i32;
-        return FINE_TUNE_TABLE[fine_tune as usize][index as usize];
+        return static_tables::FINE_TUNE_TABLE[fine_tune as usize][index as usize];
     } else {
-        return (period as f32 * SCALE_FINE_TUNE[fine_tune as usize]) as u32;
+        return (period as f32 * static_tables::SCALE_FINE_TUNE[fine_tune as usize]) as u32;
     }
-}
-
-fn is_standard_note_period(period: u32) -> bool {
-    // treat 0 as  standard note because it is not a playable note
-    if period == 0 {
-        return true;
-    }
-    return match FREQUENCY_TABLE.binary_search(&period) {
-        Ok(_idx) => true,
-        Err(_idx) => false,
-    };
 }
 
 /// Holds the info and sample data for a sample
@@ -290,6 +172,9 @@ enum Effect {
     PatternLoop {
         arg: u8,
     }, //E6
+    CoarsePan {
+        pan_pos: u8,
+    }, //E8
     RetriggerSample {
         retrigger_delay: u8,
     }, //E9
@@ -421,6 +306,9 @@ impl Effect {
                     },
                     6 => Effect::PatternLoop {
                         arg: extended_argument as u8,
+                    },
+                    8 => Effect::CoarsePan {
+                        pan_pos: extended_argument as u8,
                     },
                     9 => Effect::RetriggerSample {
                         retrigger_delay: extended_argument as u8,
@@ -829,7 +717,7 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
         Effect::PatternLoop { arg } => {
             if arg == 0 {
                 // arg 0 marks the loop start position
-                player_state.pattern_loop_position = player_state.song_pattern_position;
+                player_state.pattern_loop_position = player_state.current_line;
             } else {
                 if player_state.pattern_loop == 0 {
                     player_state.pattern_loop = arg as i32;
@@ -840,6 +728,9 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
                     player_state.set_pattern_position = true;
                 }
             }
+        }
+        Effect::CoarsePan { pan_pos } => {
+            // Skip pan for now
         }
         Effect::RetriggerSample { retrigger_delay } => {
             channel.retrigger_delay = retrigger_delay as u32;
@@ -884,10 +775,6 @@ fn play_line(song: &Song, player_state: &mut PlayerState) {
         player_state.current_line = 0;
         player_state.next_position = -1;
     }
-    if player_state.set_pattern_position {
-        player_state.set_pattern_position = false;
-        player_state.current_line = player_state.pattern_loop_position;
-    }
 
     // We could have been place past the end of the song
     if player_state.song_pattern_position >= song.num_used_patterns {
@@ -909,13 +796,20 @@ fn play_line(song: &Song, player_state: &mut PlayerState) {
         );
     }
 
-    player_state.current_line += 1;
-    if player_state.current_line >= 64 {
-        player_state.song_pattern_position += 1;
-        if player_state.song_pattern_position >= song.num_used_patterns {
-            player_state.song_has_ended = true;
+    if player_state.set_pattern_position {
+        // jump to pattern loop position of the pattern loop was triggered
+        player_state.set_pattern_position = false;
+        player_state.current_line = player_state.pattern_loop_position;
+    } else {
+        // othwerwise advance to next pattern
+        player_state.current_line += 1;
+        if player_state.current_line >= 64 {
+            player_state.song_pattern_position += 1;
+            if player_state.song_pattern_position >= song.num_used_patterns {
+                player_state.song_has_ended = true;
+            }
+            player_state.current_line = 0;
         }
-        player_state.current_line = 0;
     }
 }
 
@@ -941,7 +835,8 @@ fn update_effects(player_state: &mut PlayerState, song: &Song) {
             channel.volume += channel.volume_change;
             if channel.tremolo_depth > 0 {
                 let base_volume = song.samples[(channel.sample_num - 1) as usize].volume as i32;
-                let tremolo_size: i32 = (VIBRATO_TABLE[(channel.tremolo_pos & 63) as usize]
+                let tremolo_size: i32 = (static_tables::VIBRATO_TABLE
+                    [(channel.tremolo_pos & 63) as usize]
                     * channel.tremolo_depth)
                     / 64;
                 let volume = base_volume + tremolo_size;
@@ -957,7 +852,7 @@ fn update_effects(player_state: &mut PlayerState, song: &Song) {
 
             if channel.arpeggio_offsets[0] != 0 || channel.arpeggio_offsets[1] != 0 {
                 // The base period is already fine tuned so need to search the right table
-                let index: i32 = FINE_TUNE_TABLE[channel.fine_tune as usize]
+                let index: i32 = static_tables::FINE_TUNE_TABLE[channel.fine_tune as usize]
                     .binary_search(&channel.base_period)
                     .expect(&format!(
                         "Unexpected period value at arpeggio {}",
@@ -969,8 +864,8 @@ fn update_effects(player_state: &mut PlayerState, song: &Song) {
                     if note_offset < 0 {
                         note_offset = 0;
                     }
-                    channel.period =
-                        FINE_TUNE_TABLE[channel.fine_tune as usize][note_offset as usize];
+                    channel.period = static_tables::FINE_TUNE_TABLE[channel.fine_tune as usize]
+                        [note_offset as usize];
                 } else {
                     channel.period = channel.base_period;
                 }
@@ -981,7 +876,8 @@ fn update_effects(player_state: &mut PlayerState, song: &Song) {
             }
             if channel.vibrato_depth > 0 {
                 channel.period = ((channel.base_period as i32)
-                    + (VIBRATO_TABLE[(channel.vibrato_pos & 63) as usize] * channel.vibrato_depth)
+                    + (static_tables::VIBRATO_TABLE[(channel.vibrato_pos & 63) as usize]
+                        * channel.vibrato_depth)
                         / 32) as u32;
                 channel.vibrato_pos += channel.vibrato_speed;
             } else if channel.note_change != 0 {
@@ -1005,26 +901,6 @@ fn update_effects(player_state: &mut PlayerState, song: &Song) {
             }
         }
     }
-}
-
-// Go through all the notes to determine if it uses only standard notes
-// ( this is a requirement for using table based fine tunes )
-fn has_standard_notes_only(patterns: &Vec<Pattern>, pattern_table: &Vec<u8>) -> bool {
-    for pattern_idx in pattern_table {
-        if *pattern_idx as usize >= patterns.len() {
-            continue;
-        }
-        let pattern = &patterns[*pattern_idx as usize];
-
-        for line in &pattern.lines {
-            for note in line {
-                if !is_standard_note_period(note.period) {
-                    return false;
-                }
-            }
-        }
-    }
-    return true;
 }
 
 /// Calculates the next sample pair (left, right) to be played from the song. The returned samples have the range [-1, 1]
@@ -1088,7 +964,7 @@ pub fn next_sample(song: &Song, player_state: &mut PlayerState) -> (f32, f32) {
                 player_state.clock_ticks_per_device_sample / channel_info.period as f32;
 
             let channel_selector = (channel_number as u8) & 0x0003;
-            if channel_selector == 0 || channel_number as u32 == 0 || channel_number == 3 {
+            if channel_selector == 0 || channel_selector == 3 {
                 left += channel_value;
             } else {
                 right += channel_value;
@@ -1096,127 +972,4 @@ pub fn next_sample(song: &Song, player_state: &mut PlayerState) -> (f32, f32) {
         }
     }
     (left, right)
-}
-
-/**
- * Identify the mod format version based on the tag. If there is not identifiable that it is assumed to be an original mod.
- */
-fn get_format(file_data: &Vec<u8>) -> FormatDescription {
-    let format_tag = String::from_utf8_lossy(&file_data[1080..1084]);
-    println!("formtat tag: {}", format_tag);
-    match format_tag.as_ref() {
-        "M.K." | "FLT4" | "M!K!" | "4CHN" => FormatDescription {
-            num_channels: 4,
-            num_samples: 31,
-            has_tag: true,
-        },
-        "8CHN" => FormatDescription {
-            num_channels: 8,
-            num_samples: 31,
-            has_tag: true,
-        },
-        "CD81" => FormatDescription {
-            num_channels: 8,
-            num_samples: 31,
-            has_tag: true,
-        },
-        "CD61" => {
-            panic!("unhandled tag cd61");
-        }
-        _ => FormatDescription {
-            num_channels: 4,
-            num_samples: 15,
-            has_tag: false,
-        },
-    }
-}
-
-/// Reads a module music file and returns a song structure ready for playing
-///
-/// # Arguments
-/// * `file_name` - the mod file on disk
-///
-pub fn read_mod_file(file_name: &str) -> Song {
-    let file_data: Vec<u8> = fs::read(file_name).expect(&format!("Cant open file {}", &file_name));
-
-    let song_name = String::from_utf8_lossy(&file_data[0..20]);
-    let format = get_format(&file_data);
-
-    let mut samples: Vec<Sample> = Vec::new();
-    let mut offset: usize = 20;
-    for _sample_num in 0..format.num_samples {
-        samples.push(Sample::new(&file_data[offset..(offset + 30) as usize]));
-        offset += 30;
-    }
-
-    // Figure out where to stop and repeat pos ( with option to repeat in the player )
-    let num_used_patterns: u8 = file_data[offset];
-    let end_position: u8 = file_data[offset + 1];
-    offset += 2;
-    let pattern_table: Vec<u8> = file_data[offset..(offset + 128)].to_vec();
-    offset += 128;
-
-    // Skip the tag if one has been identified
-    if format.has_tag {
-        offset += 4;
-    }
-
-    // Work out how the total size of the sample data at tbe back od the file
-    let mut total_sample_size = 0;
-    for sample in &mut samples {
-        total_sample_size = total_sample_size + sample.size;
-    }
-
-    // The pattern take up all the space that remains after everything else has been accounted for
-    let total_pattern_size = file_data.len() as u32 - (offset as u32) - total_sample_size;
-    let single_pattern_size = format.num_channels * 4 * 64;
-    let mut num_patterns = total_pattern_size / single_pattern_size;
-    // Find the highest pattern referenced within the used patter references. This is the minimum number of patterns we must load
-    let slc = &pattern_table[0..(num_used_patterns as usize)];
-    let min_pattern_required = *slc.iter().max().unwrap() + 1;
-    // we must read AT LEAST the max_pattern_required patterns
-    if (min_pattern_required as u32) > num_patterns {
-        num_patterns = min_pattern_required as u32;
-    }
-
-    // Read the patterns
-    let mut patterns: Vec<Pattern> = Vec::new();
-    for _pattern_number in 0..num_patterns {
-        let mut pattern = Pattern::new();
-        for line in 0..64 {
-            for _channel in 0..format.num_channels {
-                let note = Note::new(&file_data[offset..(offset + 4)], &format);
-                pattern.lines[line].push(note);
-                offset += 4;
-            }
-        }
-        patterns.push(pattern);
-    }
-
-    // Some mods have weird garbage between the end of the pattern data and the samples
-    // ( and some weird files do not have enough for both patterns ans samples. Effectively some storage is used for both!!)
-    // Skip the potential garbage by working out the sample position from the back of the file
-    offset = (file_data.len() as u32 - total_sample_size) as usize;
-
-    for sample_number in 0..samples.len() {
-        let length = samples[sample_number].size;
-        for _idx in 0..length {
-            samples[sample_number].samples.push(file_data[offset] as i8);
-            offset += 1;
-        }
-    }
-
-    // there are non standard notes, we cant use table based fine tune
-    let has_standard_notes = has_standard_notes_only(&patterns, &pattern_table);
-
-    Song {
-        name: String::from(song_name),
-        format: format,
-        samples: samples,
-        patterns: patterns,
-        pattern_table: pattern_table,
-        num_used_patterns: num_used_patterns as u32,
-        end_position: end_position as u32,
-        has_standard_notes: has_standard_notes,
-    }
 }
