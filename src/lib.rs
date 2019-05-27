@@ -564,6 +564,7 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
     let old_tremolo_speed = channel.tremolo_speed;
     let old_tremolo_depth = channel.tremolo_depth;
     let old_sample_pos = channel.sample_pos;
+    let old_sample_num = channel.sample_num;
 
     if note.sample_number > 0 {
         // sample number 0, means that the sample keeps playing. The sample indices starts at one, so subtract 1 to get to 0 based index
@@ -590,6 +591,12 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
         channel.period = fine_tune_period(note.period, channel.fine_tune, song.has_standard_notes);
         channel.base_period = channel.period;
         channel.sample_pos = 0.0;
+        // If a note period was played we need to reset the size to start playing from the start
+        // ( and redo any sample loops.  sample.size changes as the sample repeats )
+        if channel.sample_num > 0 {
+            let current_sample: &Sample = &song.samples[(channel.sample_num - 1) as usize];
+            channel.size = current_sample.size;
+        }
     }
 
     match note.effect {
@@ -644,7 +651,10 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
             // store porta values. Much later portamento effects could still depend on them
             channel.last_porta_speed = channel.note_change;
             channel.last_porta_target = channel.period_target;
-            channel.sample_pos = old_sample_pos;
+            // If the portamento effect happens on the same sample, keep position
+            if old_sample_num == channel.sample_num {
+                channel.sample_pos = old_sample_pos;
+            }
         }
         Effect::Vibrato { speed, amplitude } => {
             if speed == 0 {
