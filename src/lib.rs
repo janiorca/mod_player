@@ -172,6 +172,9 @@ enum Effect {
     PatternLoop {
         arg: u8,
     }, //E6
+    TremoloWaveform {
+        wave: u8,
+    }, // E7
     CoarsePan {
         pan_pos: u8,
     }, //E8
@@ -306,6 +309,9 @@ impl Effect {
                     },
                     6 => Effect::PatternLoop {
                         arg: extended_argument as u8,
+                    },
+                    7 => Effect::TremoloWaveform {
+                        wave: extended_argument as u8,
                     },
                     8 => Effect::CoarsePan {
                         pan_pos: extended_argument as u8,
@@ -442,7 +448,7 @@ struct ChannelInfo {
     last_porta_speed: i32,  // last portamento to note and speed parameters
     last_porta_target: u32, // must be tracked separately to porta up and down ( and these may be referred to several lines later)
 
-    base_period: u32,
+    base_period: u32, // the untuned period. The same value as the last valid note period value
     vibrato_pos: u32,
     vibrato_speed: u32,
     vibrato_depth: i32,
@@ -589,7 +595,7 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
     channel.arpeggio_offsets[1] = 0;
     if note.period != 0 {
         channel.period = fine_tune_period(note.period, channel.fine_tune, song.has_standard_notes);
-        channel.base_period = channel.period;
+        channel.base_period = note.period;
         channel.sample_pos = 0.0;
         // If a note period was played we need to reset the size to start playing from the start
         // ( and redo any sample loops.  sample.size changes as the sample repeats )
@@ -711,6 +717,10 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
         }
         Effect::PatternBreak { next_pattern_pos } => {
             player_state.next_pattern_pos = next_pattern_pos as i32;
+            if player_state.next_pattern_pos > 63 {
+                // only possible to jump to index 63 at most. Anything highrt interpreted as jumping to beginning of next pattern
+                player_state.next_pattern_pos = 0;
+            }
         }
         Effect::PositionJump { next_pattern } => {
             if next_pattern as u32 <= player_state.song_pattern_position {
@@ -738,6 +748,9 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
                     player_state.set_pattern_position = true;
                 }
             }
+        }
+        Effect::TremoloWaveform { wave } => {
+            // println!("set tremolo wave");
         }
         Effect::CoarsePan { pan_pos } => {
             // Skip pan for now
@@ -861,12 +874,14 @@ fn update_effects(player_state: &mut PlayerState, song: &Song) {
             }
 
             if channel.arpeggio_offsets[0] != 0 || channel.arpeggio_offsets[1] != 0 {
-                // The base period is already fine tuned so need to search the right table
-                let index: i32 = static_tables::FINE_TUNE_TABLE[channel.fine_tune as usize]
+                let new_period: u32;
+                let index = static_tables::FREQUENCY_TABLE
                     .binary_search(&channel.base_period)
                     .expect(&format!(
-                        "Unexpected period value at arpeggio {}",
-                        channel.base_period
+                        "Unexpected period value at arpeggio {}, {}:{}",
+                        channel.base_period,
+                        player_state.song_pattern_position,
+                        player_state.current_line
                     )) as i32;
                 if channel.arpeggio_counter > 0 {
                     let mut note_offset = index
@@ -874,18 +889,25 @@ fn update_effects(player_state: &mut PlayerState, song: &Song) {
                     if note_offset < 0 {
                         note_offset = 0;
                     }
-                    channel.period = static_tables::FINE_TUNE_TABLE[channel.fine_tune as usize]
-                        [note_offset as usize];
+                    new_period = static_tables::FREQUENCY_TABLE[note_offset as usize];
                 } else {
-                    channel.period = channel.base_period;
+                    new_period = channel.base_period;
                 }
+                channel.period =
+                    fine_tune_period(new_period, channel.fine_tune, song.has_standard_notes);
+
                 channel.arpeggio_counter += 1;
                 if channel.arpeggio_counter >= 3 {
                     channel.arpeggio_counter = 0;
                 }
             }
             if channel.vibrato_depth > 0 {
-                channel.period = ((channel.base_period as i32)
+                let period = fine_tune_period(
+                    channel.base_period,
+                    channel.fine_tune,
+                    song.has_standard_notes,
+                );
+                channel.period = ((period as i32)
                     + (static_tables::VIBRATO_TABLE[(channel.vibrato_pos & 63) as usize]
                         * channel.vibrato_depth)
                         / 32) as u32;
