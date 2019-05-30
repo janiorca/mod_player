@@ -87,6 +87,7 @@ impl Effect {
                 speed: _,
                 amplitude: _,
             } => String::from("Trmlo"),
+            Effect::Pan { position: _ } => String::from("Pan  "),
             Effect::SetSampleOffset { offset: _ } => String::from("Offst"),
             Effect::VolumeSlide { volume_change: _ } => String::from("VolSl"),
             Effect::PositionJump { next_pattern: _ } => String::from("Jump."),
@@ -98,7 +99,12 @@ impl Effect {
             Effect::SetHardwareFilter { new_state: _ } => String::from("StHwF"),
             Effect::FinePortaUp { period_change: _ } => String::from("FPoUp"),
             Effect::FinePortaDown { period_change: _ } => String::from("FPoDn"),
+            Effect::Glissando {
+                use_smooth_slide: _,
+            } => String::from("Glsnd"),
             Effect::PatternLoop { arg: _ } => String::from("PtnLp"),
+            Effect::TremoloWaveform { wave: _ } => String::from("TrmWv"),
+            Effect::CoarsePan { pan_pos: _ } => String::from("CrPan"),
             Effect::RetriggerSample { retrigger_delay: _ } => String::from("ReTrg"),
             Effect::FineVolumeSlideUp { volume_change: _ } => String::from("FVSUp"),
             Effect::FineVolumeSlideDown { volume_change: _ } => String::from("FVSDn"),
@@ -106,6 +112,7 @@ impl Effect {
             Effect::DelayedSample { delay_ticks: _ } => String::from("DlySm"),
             Effect::DelayedLine { delay_ticks: _ } => String::from("DlyLn"),
             Effect::SetVibratoWave { wave: _ } => String::from("VibWv"),
+            Effect::SetFineTune { fine_tune: _8 } => String::from("FnTne"),
             _ => String::from("....."),
         };
     }
