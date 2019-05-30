@@ -50,6 +50,11 @@ fn get_format(file_data: &Vec<u8>) -> FormatDescription {
             num_samples: 31,
             has_tag: true,
         },
+        "6CHN" => FormatDescription {
+            num_channels: 6,
+            num_samples: 31,
+            has_tag: true,
+        },
         "12CH" => FormatDescription {
             num_channels: 12,
             num_samples: 31,

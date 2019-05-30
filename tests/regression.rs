@@ -44,6 +44,7 @@ fn reg_test() {
         "19xx.mod",
         "ballad_ej.mod", // rare 12 channel mod
         "JARRE.mod",     // weird broken mod. incomplete last pattern????
+        "star-rai.mod",  // 6 channel mod
     ];
     let mut song_checksums: HashMap<String, u64> = HashMap::new();
     let expected_results = get_expected_results().ok();
