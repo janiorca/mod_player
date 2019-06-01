@@ -99,6 +99,7 @@ impl Effect {
             Effect::CutNote { delay } => format!( "CutNt {:>4}", delay ),
             Effect::DelayedSample { delay_ticks } => format!( "DlySm {:>4}", delay_ticks),
             Effect::DelayedLine { delay_ticks } => format!( "DlyLn {:>4}", delay_ticks),
+            Effect::InvertLoop{ loop_position } => format!( "InvLp {:>4}", loop_position ),
             Effect::SetVibratoWave { wave } => format!("VibWv {:>4}", wave ),
             Effect::SetFineTune { fine_tune } => format!("FnTne {:>4}", fine_tune),
             _ => String::from(".........."),

@@ -199,7 +199,6 @@ enum Effect {
     InvertLoop {
         loop_position: u8,
     }, //EF
-
     SetVibratoWave {
         wave: u8,
     },
@@ -752,12 +751,13 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
                 }
             }
         }
-        Effect::TremoloWaveform { wave } => {
+        Effect::TremoloWaveform { wave: _ } => {
             // println!("set tremolo wave");
         }
-        Effect::CoarsePan { pan_pos } => {
+        Effect::CoarsePan { pan_pos: _ } => {
             // Skip pan for now
         }
+
         Effect::RetriggerSample { retrigger_delay } => {
             channel.retrigger_delay = retrigger_delay as u32;
             channel.retrigger_counter = 0;
@@ -782,6 +782,9 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
         }
         Effect::DelayedLine { delay_ticks } => {
             player_state.delay_line = delay_ticks as u32;
+        }
+        Effect::InvertLoop { loop_position: _ } => {
+            //Ignore for now
         }
         Effect::None => {}
         _ => {

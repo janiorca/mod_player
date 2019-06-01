@@ -1,6 +1,4 @@
 extern crate cpal;
-use hound;
-
 use std::sync;
 use std::sync::mpsc;
 use std::thread;
@@ -33,7 +31,7 @@ fn setup_stream(song: sync::Arc<mod_player::Song>) -> mpsc::Sender<PlayerCommand
     let mut player_state: mod_player::PlayerState =
         mod_player::PlayerState::new(song.format.num_channels, format.sample_rate.0);
     let mut last_line_pos = 9999;
-    let (tx, rx) = mpsc::channel();
+    let (tx, _rx) = mpsc::channel();
     thread::spawn(move || {
         event_loop.run(move |_, data| {
             if player_state.current_line != last_line_pos {
@@ -68,7 +66,7 @@ fn main() {
     let song = sync::Arc::new(mod_player::read_mod_file("mod_files/chcknbnk.mod"));
 
     mod_player::textout::print_song_info(&song);
-    let tx = setup_stream(song.clone());
+    let _tx = setup_stream(song.clone());
     loop {
         let mut command = String::new();
         std::io::stdin().read_line(&mut command);
