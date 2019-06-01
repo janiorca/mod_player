@@ -519,7 +519,7 @@ pub struct PlayerState {
     next_position: i32, // on next line if == 1 do nothing else go to beginning of the this pattern
     delay_line: u32,    // how many extra ticks to delay before playing next line
 
-    pattern_loop_position: u32,
+    pattern_loop_position: Option<u32>, // set if we have a good position to loop to
     pattern_loop: i32,
     set_pattern_position: bool, // set to jump
 }
@@ -546,7 +546,7 @@ impl PlayerState {
             song_has_ended: false,
             has_looped: false,
 
-            pattern_loop_position: 0,
+            pattern_loop_position: None,
             pattern_loop: 0,
             set_pattern_position: false,
         }
@@ -737,15 +737,18 @@ fn play_note(note: &Note, player_state: &mut PlayerState, channel_num: usize, so
         Effect::PatternLoop { arg } => {
             if arg == 0 {
                 // arg 0 marks the loop start position
-                player_state.pattern_loop_position = player_state.current_line;
+                player_state.pattern_loop_position = Some(player_state.current_line);
             } else {
                 if player_state.pattern_loop == 0 {
                     player_state.pattern_loop = arg as i32;
                 } else {
                     player_state.pattern_loop -= 1;
                 }
-                if player_state.pattern_loop > 0 {
+                if player_state.pattern_loop > 0 && player_state.pattern_loop_position.is_some() {
                     player_state.set_pattern_position = true;
+                } else {
+                    // Double loops ( loops start followed by two or more loops can confuse the player. Once a loop is passed. invalidate the loop marker)
+                    player_state.pattern_loop_position = None;
                 }
             }
         }
@@ -819,10 +822,10 @@ fn play_line(song: &Song, player_state: &mut PlayerState) {
         );
     }
 
-    if player_state.set_pattern_position {
+    if player_state.set_pattern_position && player_state.pattern_loop_position.is_some() {
         // jump to pattern loop position of the pattern loop was triggered
         player_state.set_pattern_position = false;
-        player_state.current_line = player_state.pattern_loop_position;
+        player_state.current_line = player_state.pattern_loop_position.unwrap();
     } else {
         // othwerwise advance to next pattern
         player_state.current_line += 1;
