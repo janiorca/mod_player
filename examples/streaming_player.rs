@@ -33,7 +33,6 @@ fn setup_stream(song: sync::Arc<mod_player::Song>) -> mpsc::Sender<PlayerCommand
     let mut player_state: mod_player::PlayerState =
         mod_player::PlayerState::new(song.format.num_channels, format.sample_rate.0);
     let mut last_line_pos = 9999;
-
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
         event_loop.run(move |_, data| {
@@ -42,7 +41,7 @@ fn setup_stream(song: sync::Arc<mod_player::Song>) -> mpsc::Sender<PlayerCommand
                     println!("");
                 }
                 print!(
-                    "{} : {} ",
+                    "{:>2}:{:>2}  ",
                     player_state.song_pattern_position, player_state.current_line
                 );
                 mod_player::textout::print_line(player_state.get_song_line(&song));
