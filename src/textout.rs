@@ -67,53 +67,41 @@ static NOTE_FREQUENCY_STRINGS: [(u32, &str); 60] = [
     (1712, "C-2"),
 ];
 
+#[rustfmt::skip]
 impl Effect {
     fn to_string(&self) -> String {
         return match self {
-            Effect::Arpeggio {
-                chord_offset_1: _,
-                chord_offset_2: _,
-            } => String::from("Arpgi"),
-            Effect::SlideUp { speed: _ } => String::from("SldUp"),
-            Effect::SlideDown { speed: _ } => String::from("SldDn"),
-            Effect::TonePortamento { speed: _ } => String::from("TonPo"),
-            Effect::Vibrato {
-                speed: _,
-                amplitude: _,
-            } => String::from("Vibra"),
-            Effect::TonePortamentoVolumeSlide { volume_change: _ } => String::from("TPVos"),
-            Effect::VibratoVolumeSlide { volume_change: _ } => String::from("ViVoS"),
-            Effect::Tremolo {
-                speed: _,
-                amplitude: _,
-            } => String::from("Trmlo"),
-            Effect::Pan { position: _ } => String::from("Pan  "),
-            Effect::SetSampleOffset { offset: _ } => String::from("Offst"),
-            Effect::VolumeSlide { volume_change: _ } => String::from("VolSl"),
-            Effect::PositionJump { next_pattern: _ } => String::from("Jump."),
-            Effect::SetVolume { volume: _ } => String::from("Volme"),
-            Effect::PatternBreak {
-                next_pattern_pos: _,
-            } => String::from("Break"),
-            Effect::SetSpeed { speed: _ } => String::from("Speed"),
-            Effect::SetHardwareFilter { new_state: _ } => String::from("StHwF"),
-            Effect::FinePortaUp { period_change: _ } => String::from("FPoUp"),
-            Effect::FinePortaDown { period_change: _ } => String::from("FPoDn"),
-            Effect::Glissando {
-                use_smooth_slide: _,
-            } => String::from("Glsnd"),
-            Effect::PatternLoop { arg: _ } => String::from("PtnLp"),
-            Effect::TremoloWaveform { wave: _ } => String::from("TrmWv"),
-            Effect::CoarsePan { pan_pos: _ } => String::from("CrPan"),
-            Effect::RetriggerSample { retrigger_delay: _ } => String::from("ReTrg"),
-            Effect::FineVolumeSlideUp { volume_change: _ } => String::from("FVSUp"),
-            Effect::FineVolumeSlideDown { volume_change: _ } => String::from("FVSDn"),
-            Effect::CutNote { delay: _ } => String::from("CutNt"),
-            Effect::DelayedSample { delay_ticks: _ } => String::from("DlySm"),
-            Effect::DelayedLine { delay_ticks: _ } => String::from("DlyLn"),
-            Effect::SetVibratoWave { wave: _ } => String::from("VibWv"),
-            Effect::SetFineTune { fine_tune: _8 } => String::from("FnTne"),
-            _ => String::from("....."),
+            Effect::Arpeggio { chord_offset_1, chord_offset_2 } => format!("Arpgi {:02}{:02}", chord_offset_1, chord_offset_2),
+            Effect::SlideUp { speed } => format!("SldUp {:>4}", speed),
+            Effect::SlideDown { speed } => format!( "SldDn {:>4}", speed ),
+            Effect::TonePortamento { speed } => format!("TonPo {:>4}", speed ),
+            Effect::Vibrato { speed, amplitude } => format!("Vibra {:02}{:02}",speed,amplitude),
+            Effect::TonePortamentoVolumeSlide { volume_change } => format!( "TPVos {:>4}", volume_change),
+            Effect::VibratoVolumeSlide { volume_change } => format!( "ViVoS {:>4}", volume_change),
+            Effect::Tremolo { speed, amplitude } => format!("Trmlo {:02}{:02}", speed, amplitude),
+            Effect::Pan { position } => format!("Pan   {:>5}.", position ),
+            Effect::SetSampleOffset { offset } => format!("Offst {:>4}", offset ),
+            Effect::VolumeSlide { volume_change } =>  {format!( "VolSl {:>4}", volume_change)  }
+            Effect::PositionJump { next_pattern } => format!( "Jump  {:>4}", next_pattern ),
+            Effect::SetVolume { volume } => format!("Volme {:>4}", volume),
+            Effect::PatternBreak { next_pattern_pos } => format!( "Break {:>4}", next_pattern_pos),
+            Effect::SetSpeed { speed } => format!( "Speed {:>4}", speed),
+            Effect::SetHardwareFilter { new_state } => format!( "StHwF {:>4}", new_state ),
+            Effect::FinePortaUp { period_change } => format!("FPoUp {:>4}", period_change),
+            Effect::FinePortaDown { period_change } => format!("FPoDn {:>4}", period_change),
+            Effect::Glissando { use_smooth_slide } => format!("Glsnd {:>4}", use_smooth_slide),
+            Effect::PatternLoop { arg } => format!("PtnLp {:>4}", arg),
+            Effect::TremoloWaveform { wave } => format!( "TrmWv {:>4}", wave ),
+            Effect::CoarsePan { pan_pos } => format!("CrPan {:>4}", pan_pos ),
+            Effect::RetriggerSample { retrigger_delay } => format!( "ReTrg {:>4}", retrigger_delay),
+            Effect::FineVolumeSlideUp { volume_change } => format!("FVSUp {:>4}", volume_change),
+            Effect::FineVolumeSlideDown { volume_change } => format!("FVSDn {:>4}", volume_change),
+            Effect::CutNote { delay } => format!( "CutNt {:>4}", delay ),
+            Effect::DelayedSample { delay_ticks } => format!( "DlySm {:>4}", delay_ticks),
+            Effect::DelayedLine { delay_ticks } => format!( "DlyLn {:>4}", delay_ticks),
+            Effect::SetVibratoWave { wave } => format!("VibWv {:>4}", wave ),
+            Effect::SetFineTune { fine_tune } => format!("FnTne {:>4}", fine_tune),
+            _ => String::from(".........."),
         };
     }
 }
@@ -182,10 +170,16 @@ mod tests {
 /// Prints out one line of note data
 pub fn print_line(line: &Vec<Note>) {
     for note in line.iter() {
+        let sample_string;
+        if note.sample_number == 0 {
+            sample_string = "..".to_string();
+        } else {
+            sample_string = note.sample_number.to_string();
+        }
         print!(
-            "{} {:02X} {}   ",
+            "{} {:>2} {}   ",
             note_string(note.period),
-            note.sample_number,
+            sample_string,
             note.effect.to_string()
         );
     }
