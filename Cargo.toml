@@ -11,7 +11,7 @@ repository = "https://github.com/janiorca/mod_player"
 readme = "readme.md"
 
 [dev-dependencies]
-cpal = "0.8.2"
+cpal = "0.11.0"
 hound = "3.4.0"
 crc = "1.8.1"
 serde = { version = "1.0.90", features = ["derive"] }

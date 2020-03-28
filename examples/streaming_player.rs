@@ -1,4 +1,6 @@
 extern crate cpal;
+use cpal::traits::{DeviceTrait,EventLoopTrait, HostTrait};
+use cpal::{StreamData,UnknownTypeOutputBuffer};
 use std::sync;
 use std::sync::mpsc;
 use std::thread;
@@ -8,8 +10,8 @@ enum PlayerCommand {
 }
 
 fn setup_stream(song: sync::Arc<mod_player::Song>) -> mpsc::Sender<PlayerCommand> {
-    let device = cpal::default_output_device().expect("Failed to get default output device");
-    println!("Sound device: {}", device.name());
+    let host = cpal::default_host();
+    let device = host.default_output_device().expect("Failed to get default output device");
 
     let format = device
         .default_output_format()
@@ -24,7 +26,7 @@ fn setup_stream(song: sync::Arc<mod_player::Song>) -> mpsc::Sender<PlayerCommand
         format.sample_rate.0, fmt, format.channels
     );
 
-    let event_loop = cpal::EventLoop::new();
+    let event_loop = host.event_loop();
     let stream_id = event_loop.build_output_stream(&device, &format).unwrap();
     event_loop.play_stream(stream_id.clone());
 
@@ -33,7 +35,7 @@ fn setup_stream(song: sync::Arc<mod_player::Song>) -> mpsc::Sender<PlayerCommand
     let mut last_line_pos = 9999;
     let (tx, _rx) = mpsc::channel();
     thread::spawn(move || {
-        event_loop.run(move |_, data| {
+        event_loop.run(move |_, result| {
             if player_state.current_line != last_line_pos {
                 if player_state.current_line == 0 {
                     println!("");
@@ -45,9 +47,17 @@ fn setup_stream(song: sync::Arc<mod_player::Song>) -> mpsc::Sender<PlayerCommand
                 mod_player::textout::print_line(player_state.get_song_line(&song));
                 last_line_pos = player_state.current_line;
             }
-            match data {
-                cpal::StreamData::Output {
-                    buffer: cpal::UnknownTypeOutputBuffer::F32(mut buffer),
+            let stream_data = match result {
+                Ok(data) => data,
+                Err(err) => {
+                    eprintln!("an error occurred on stream {:?}: {}", stream_id, err);
+                    return;
+                }
+                _ => return,
+            };
+            match stream_data {
+                StreamData::Output {
+                    buffer: UnknownTypeOutputBuffer::F32(mut buffer),
                 } => {
                     for sample in buffer.chunks_mut(format.channels as usize) {
                         let (left, right) = mod_player::next_sample(&song, &mut player_state);
