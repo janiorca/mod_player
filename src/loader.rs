@@ -36,7 +36,7 @@ fn has_standard_notes_only(patterns: &Vec<Pattern>, pattern_table: &Vec<u8>) -> 
 /**
  * Identify the mod format version based on the tag. If there is not identifiable that it is assumed to be an original mod.
  */
-fn get_format(file_data: &Vec<u8>) -> FormatDescription {
+fn get_format(file_data: &[u8]) -> FormatDescription {
     let format_tag = String::from_utf8_lossy(&file_data[1080..1084]);
     println!("formtat tag: {}", format_tag);
     match format_tag.as_ref() {
@@ -83,9 +83,17 @@ fn get_format(file_data: &Vec<u8>) -> FormatDescription {
 ///
 pub fn read_mod_file(file_name: &str) -> Song {
     let file_data: Vec<u8> = fs::read(file_name).expect(&format!("Cant open file {}", &file_name));
+    read_mod_file_slice(&file_data)
+}
 
+/// Reads a module music file (in byte slice form) and returns a song structure ready for playing
+///
+/// # Arguments
+/// * `file_data` - the slice of bytes to load from
+///
+pub fn read_mod_file_slice(file_data: &[u8]) -> Song {
     let song_name = String::from_utf8_lossy(&file_data[0..20]);
-    let format = get_format(&file_data);
+    let format = get_format(file_data);
 
     let mut samples: Vec<Sample> = Vec::new();
     let mut offset: usize = 20;
