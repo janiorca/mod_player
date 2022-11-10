@@ -45,6 +45,7 @@ mod tests {
 
 mod loader;
 pub use loader::read_mod_file;
+pub use loader::read_mod_file_slice;
 mod static_tables;
 pub mod textout;
 
